@@ -1,0 +1,35 @@
+import type { Metadata, Viewport } from "next";
+import { ToastProvider } from "@/components/Toast";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "Campus Adda",
+  description: "The student network for every college in India: notes, placements, voice Spaces, live debates, events and more.",
+  icons: { icon: "/icon.svg" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F1F4F6" },
+    { media: "(prefers-color-scheme: dark)", color: "#0F171D" },
+  ],
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hind:wght@400;500;600&display=swap" />
+      </head>
+      <body>
+        <ToastProvider>{children}</ToastProvider>
+      </body>
+    </html>
+  );
+}
