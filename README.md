@@ -17,14 +17,46 @@ Built with Next.js 15, Supabase (database, logins, live updates), LiveKit (voice
 
 ## Deploy it (about 20 minutes)
 
-You need four free accounts: **Supabase**, **LiveKit Cloud**, **Vercel** and **Anthropic** (the AI helper is paid per use; add a small amount of credit).
+You need four free accounts: **Supabase**, **LiveKit Cloud**, **Vercel** and **Anthropic** (the AI helper is paid per use; add a small amount of credit), plus an email sender for sign-in codes (your Gmail works for testing).
+
+### Setup progress
+
+Tick these off as you go.
+
+- [x] Code pushed to GitHub (`Harsha2414/den`)
+- [x] Supabase project created and both SQL files run
+- [x] Email sender (SMTP) set up: Gmail for testing
+- [ ] Email templates updated with `{{ .Token }}`
+- [ ] Supabase URL and keys copied
+- [ ] Google sign-in connected
+- [ ] LiveKit keys copied
+- [ ] Anthropic API key created
+- [ ] Deployed on Vercel with all keys
+- [ ] Vercel link added to Supabase URL settings
+- [ ] Signed up and made yourself admin
+- [ ] Tested with 2 to 3 friends (post, message, join a Space, run a short debate)
+- [ ] Before public launch: own domain + Brevo/Resend sender, trademark check, privacy policy
 
 ### 1. Supabase: database and sign-in
 
 1. Go to [supabase.com](https://supabase.com) and create a new project. Pick the **Mumbai (ap-south-1)** region so it's fast for Indian students. Save the database password somewhere safe.
 2. Open **SQL Editor**, then **New query**. Paste everything from `supabase/migrations/0001_init.sql` and click **Run**. You should see "Success".
 3. Make another new query, paste `supabase/seed.sql` and click **Run**. This adds 50 well-known colleges. Students can add their own college when they sign up.
-4. Open **Authentication > Emails > Templates**. In both **Confirm sign up** and **Magic link or OTP**, replace the body with something like:
+4. **Set up an email sender (required for college-email codes).** Supabase's built-in sender only emails members of your own Supabase team, so students won't get codes without this. Open **Authentication > Emails > SMTP Settings**, turn on **Enable custom SMTP**, and pick one:
+
+   **For testing: your Gmail** (a few hundred emails a day; codes may land in spam)
+   1. Turn on 2-Step Verification for your Google account.
+   2. Go to [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords), create an app password named "Den" and copy the 16-character code.
+   3. In Supabase fill in: Sender email = your Gmail address, Sender name = `Den`, Host = `smtp.gmail.com`, Port = `587`, Username = your full Gmail address, Password = the app password (no spaces). Save.
+
+   **For launch: your own domain with Brevo or Resend** (reliable delivery, codes come from your brand)
+   1. Buy a domain (for example `joinden.in`) and add it in Brevo under **Senders, Domains & Dedicated IPs**. Add the DNS records Brevo shows you so the domain is verified.
+   2. Create a sender such as `no-reply@joinden.in`, then go to **Settings > SMTP & API** and generate an **SMTP key** (not an API key).
+   3. In Supabase fill in: Sender email = `no-reply@joinden.in`, Sender name = `Den`, Host = `smtp-relay.brevo.com`, Port = `587`, Username = your Brevo login email, Password = the SMTP key. Save.
+
+   After saving, Supabase allows about 30 emails an hour. Raise it under **Authentication > Rate Limits** when more students join.
+
+5. Open **Authentication > Emails > Templates**. In both **Confirm sign up** and **Magic link or OTP**, switch the message editor to its **Source** (code) view and replace the body with:
 
    ```html
    <h2>Your Den sign-in code</h2>
@@ -32,12 +64,12 @@ You need four free accounts: **Supabase**, **LiveKit Cloud**, **Vercel** and **A
    <p>If you didn't ask for this, you can ignore this email.</p>
    ```
 
-5. Open **Project Settings > API** (or **API Keys**) and copy:
+   Set the subject of both to `Your Den sign-in code` and save each one.
+
+6. Open **Project Settings > API** (or **API Keys**) and copy:
    - the **Project URL**
    - the **anon** key (newer projects call it the **publishable** key)
-   - the **service_role** key (newer projects: **secret** key). Keep this one secret.
-
-> **Before you invite lots of students:** Supabase's built-in email sender is only meant for testing and sends a small number of emails per hour. Add your own email sender under **Authentication > Emails > SMTP Settings** (Resend, Brevo, Amazon SES and others have free tiers).
+   - the **service_role** key (newer projects: **secret** key). Keep this one secret and never put it in code or share it.
 
 ### 2. Google sign-in
 
