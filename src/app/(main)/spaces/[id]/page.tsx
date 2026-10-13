@@ -26,13 +26,16 @@ export default function SpacePage({ params }: { params: Promise<{ id: string }> 
   const [joining, setJoining] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   const loadSpace = useCallback(async () => {
-    const { data } = await supabase.from("spaces").select(`*, host:profiles(${AUTHOR_COLS})`).eq("id", id).maybeSingle();
+    const { data, error } = await supabase.from("spaces").select(`*, host:profiles!spaces_host_id_fkey(${AUTHOR_COLS})`).eq("id", id).maybeSingle();
+    if (error) { setLoadError(friendlyError(error, "Couldn't load this Space. Check your connection and try again.")); return; }
+    setLoadError("");
     setSpace((data as unknown as Space) || null);
   }, [supabase, id]);
   const loadRows = useCallback(async () => {
-    const { data } = await supabase.from("space_participants").select(`*, profile:profiles(${AUTHOR_COLS})`).eq("space_id", id);
+    const { data } = await supabase.from("space_participants").select(`*, profile:profiles!space_participants_user_id_fkey(${AUTHOR_COLS})`).eq("space_id", id);
     setRows((data || []) as unknown as SpaceParticipant[]);
   }, [supabase, id]);
   const loadVotes = useCallback(async () => {
@@ -80,6 +83,10 @@ export default function SpacePage({ params }: { params: Promise<{ id: string }> 
     router.replace("/spaces");
   }
 
+  if (loadError && !space) return (
+    <main className="wrap page"><div className="empty" style={{ marginTop: 20 }}>{loadError}
+      <button className="secondary" onClick={() => loadSpace()}>Try again</button></div></main>
+  );
   if (space === undefined) return <main className="wrap page"><div className="empty" style={{ marginTop: 20 }}>Loading...</div></main>;
   if (space === null) return (
     <main className="wrap page"><div className="empty" style={{ marginTop: 20 }}>This Space doesn't exist or is only open to another college.

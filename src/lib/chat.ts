@@ -3,7 +3,7 @@ import type { Author, Conversation } from "./types";
 export interface ConvMember { user_id: string; last_read_at: string; profile: Pick<Author, "id" | "name" | "verified"> | null }
 export type ConvWithMembers = Conversation & { members: ConvMember[] };
 
-export const CONV_SELECT = "*, members:conversation_members(user_id, last_read_at, profile:profiles(id,name,verified))";
+export const CONV_SELECT = "*, members:conversation_members(user_id, last_read_at, profile:profiles!conversation_members_user_id_fkey(id,name,verified))";
 
 export function convTitle(c: ConvWithMembers, meId: string): string {
   if (c.is_group) return c.title || "Group";

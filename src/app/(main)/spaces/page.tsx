@@ -47,7 +47,7 @@ export default function SpacesPage() {
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
-    const sel = `*, host:profiles(${AUTHOR_COLS})`;
+    const sel = `*, host:profiles!spaces_host_id_fkey(${AUTHOR_COLS})`;
     const base = () => {
       const q = supabase.from("spaces").select(sel);
       return filter === "all" ? q : q.eq("mode", filter);

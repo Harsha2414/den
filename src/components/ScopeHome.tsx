@@ -34,7 +34,8 @@ export default function ScopeHome({ scope, initialTab }: { scope: string; initia
 
   const load = useCallback(async () => {
     setError("");
-    const sel = tab === "posts" ? `*, author:profiles(${AUTHOR_COLS}), comments(count)` : `*, author:profiles(${AUTHOR_COLS})`;
+    const author = `author:profiles!${tab}_author_id_fkey(${AUTHOR_COLS})`;
+    const sel = tab === "posts" ? `*, ${author}, comments(count)` : `*, ${author}`;
     let q = supabase.from(tab).select(sel);
     if (tab === "posts" && india) q = q.eq("visibility", "india");
     if (!india) q = q.eq("college_id", scope);
@@ -64,7 +65,7 @@ export default function ScopeHome({ scope, initialTab }: { scope: string; initia
   useEffect(() => { setItems(null); load(); }, [load]);
 
   useEffect(() => {
-    let q = supabase.from("spaces").select(`*, host:profiles(${AUTHOR_COLS})`).eq("status", "live");
+    let q = supabase.from("spaces").select(`*, host:profiles!spaces_host_id_fkey(${AUTHOR_COLS})`).eq("status", "live");
     q = india ? q.eq("visibility", "india") : q.eq("college_id", scope);
     q.order("started_at", { ascending: false }).limit(5).then(({ data }: { data: unknown[] | null }) => setLiveSpaces((data || []) as Space[]));
   }, [india, scope, supabase]);

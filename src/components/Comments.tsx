@@ -17,7 +17,7 @@ export default function Comments({ postId, onCount }: { postId: string; onCount:
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from("comments").select(`*, author:profiles(${AUTHOR_COLS})`).eq("post_id", postId).order("created_at").limit(200);
+    const { data } = await supabase.from("comments").select(`*, author:profiles!comments_author_id_fkey(${AUTHOR_COLS})`).eq("post_id", postId).order("created_at").limit(200);
     const rows = (data || []) as Comment[];
     setList(rows); onCount(rows.length);
   }, [postId, supabase, onCount]);
