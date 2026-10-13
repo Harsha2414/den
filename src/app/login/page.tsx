@@ -39,7 +39,12 @@ export default function LoginPage() {
     }
     const { error } = await supabase.auth.signInWithOtp({ email: addr, options: { shouldCreateUser: true } });
     setBusy(false);
-    if (error) return setErr(/rate limit/i.test(error.message) ? "Too many codes requested. Wait a few minutes and try again." : friendlyError(error, "Couldn't send the code. Try again."));
+    if (error) {
+      console.error("Sign-in code error:", error.message);
+      if (/rate limit/i.test(error.message)) return setErr("Too many codes requested. Wait a few minutes and try again.");
+      if (/sending|smtp|email/i.test(error.message)) return setErr("We couldn't send your sign-in code right now. Try again in a few minutes, or use Continue with Google.");
+      return setErr(friendlyError(error, "Couldn't send the code. Try again, or use Continue with Google."));
+    }
     setEmail(addr); setStage("code");
   }
 
