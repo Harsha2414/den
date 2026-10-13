@@ -37,7 +37,7 @@ export default function PeoplePicker({ multi, selected, onPick, onToggle }: {
         <Icon name="search" size={17} />
         <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search students by name" aria-label="Search students" />
       </div>
-      {!q && <p className="note">Students from your college. Search to find anyone on Campus Adda.</p>}
+      {!q && <p className="note">Students from your college. Search to find anyone on Den.</p>}
       {people === null ? <p className="meta">Loading...</p> :
         people.length === 0 ? <p className="note">No students found with that name.</p> :
         people.map((p) => multi ? (

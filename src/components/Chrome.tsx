@@ -41,7 +41,7 @@ export function TopBar() {
   return (
     <header className="top">
       <div className="wrap bar">
-        <Link href="/" className="brand">Campus <span>Adda</span></Link>
+        <Link href="/" className="brand" aria-label="Den home">Den<span>.</span></Link>
         <div className="acts">
           <Link href="/colleges" className="icon-btn" aria-label="Browse colleges"><Icon name="search" /></Link>
           <Link href="/me" aria-label="Your profile"><Avatar id={me.id} name={me.name} /></Link>

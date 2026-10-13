@@ -3,7 +3,7 @@ import { ToastProvider } from "@/components/Toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Campus Adda",
+  title: "Den",
   description: "The student network for every college in India: notes, placements, voice Spaces, live debates, events and more.",
   icons: { icon: "/icon.svg" },
 };

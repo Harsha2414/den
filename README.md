@@ -1,6 +1,6 @@
-# Campus Adda
+# Den
 
-The student network for every college in India.
+The student hangout for every college in India.
 
 - **Home page for every college** plus a common **All India** page
 - **Feed** with comments; each post is visible to *my college* only or to *All India*
@@ -27,7 +27,7 @@ You need four free accounts: **Supabase**, **LiveKit Cloud**, **Vercel** and **A
 4. Open **Authentication > Emails > Templates**. In both **Confirm sign up** and **Magic link or OTP**, replace the body with something like:
 
    ```html
-   <h2>Your Campus Adda sign-in code</h2>
+   <h2>Your Den sign-in code</h2>
    <p>Enter this code to sign in: <strong>{{ .Token }}</strong></p>
    <p>If you didn't ask for this, you can ignore this email.</p>
    ```
@@ -41,7 +41,7 @@ You need four free accounts: **Supabase**, **LiveKit Cloud**, **Vercel** and **A
 
 ### 2. Google sign-in
 
-1. In [Google Cloud Console](https://console.cloud.google.com), create a project, then go to **APIs & Services > OAuth consent screen** and fill in the app name (Campus Adda) and your email.
+1. In [Google Cloud Console](https://console.cloud.google.com), create a project, then go to **APIs & Services > OAuth consent screen** and fill in the app name (Den) and your email.
 2. Go to **Credentials > Create credentials > OAuth client ID**, choose **Web application**.
 3. Under **Authorized redirect URIs** add: `https://YOUR-PROJECT.supabase.co/auth/v1/callback` (use your Supabase Project URL).
 4. Copy the **Client ID** and **Client secret**, then in Supabase open **Authentication > Sign In / Providers > Google**, turn it on and paste both.
@@ -58,7 +58,7 @@ You need four free accounts: **Supabase**, **LiveKit Cloud**, **Vercel** and **A
 
 ### 5. Vercel: put it online
 
-1. Go to [vercel.com](https://vercel.com), sign in with GitHub, click **Add New > Project** and import the `campus-adda` repository.
+1. Go to [vercel.com](https://vercel.com), sign in with GitHub, click **Add New > Project** and import the `den` repository.
 2. Before clicking Deploy, open **Environment Variables** and add every line from `.env.example` with your real values:
 
    | Name | Value |
@@ -73,7 +73,7 @@ You need four free accounts: **Supabase**, **LiveKit Cloud**, **Vercel** and **A
    | `ANTHROPIC_MODEL` | `claude-sonnet-5-5` |
    | `AI_DAILY_LIMIT` | `20` |
 
-3. Click **Deploy**. When it's done you get a link like `https://campus-adda.vercel.app`.
+3. Click **Deploy**. When it's done you get a link like `https://den-yourname.vercel.app` (you can add your own domain later).
 4. Back in Supabase, open **Authentication > URL Configuration**:
    - **Site URL**: your Vercel link
    - **Redirect URLs**: add `https://YOUR-VERCEL-LINK/auth/callback`

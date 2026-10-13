@@ -11,7 +11,7 @@ export default async function OnboardingPage() {
 
   return (
     <main className="onb">
-      <h1>Welcome<span>to Campus Adda.</span></h1>
+      <h1>Welcome<span>to Den.</span></h1>
       <p>Tell students who you are. You can change this later from your profile.</p>
       <ProfileForm userId={user.id} colleges={colleges || []} />
     </main>

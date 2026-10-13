@@ -1,4 +1,4 @@
--- Campus Adda database schema
+-- Den database schema
 -- Run this whole file once in the Supabase SQL editor (or with `supabase db push`).
 
 

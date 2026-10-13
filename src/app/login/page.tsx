@@ -58,7 +58,8 @@ export default function LoginPage() {
 
   return (
     <main className="onb">
-      <h1>Campus Adda<span>for every college in India.</span></h1>
+      <h1 className="logo">Den<span className="logo-dot">.</span></h1>
+      <p className="tagline">The student hangout for every college in India.</p>
       <p>Your college's own home for notes, PYQs, placement stories, voice Spaces, live debates and events, plus one feed shared across India.</p>
 
       <div className="form">

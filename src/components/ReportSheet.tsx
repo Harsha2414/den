@@ -21,14 +21,14 @@ export default function ReportSheet({ targetType, targetId, onClose }: { targetT
     const { error } = await supabaseBrowser().from("reports").insert({ target_type: targetType, target_id: targetId, reason: text.slice(0, 1000) });
     setBusy(false);
     if (error) return setErr(friendlyError(error, "Couldn't send the report. Try again."));
-    toast("Report sent. Thanks for keeping Campus Adda safe.");
+    toast("Report sent. Thanks for keeping Den safe.");
     onClose();
   }
 
   return (
     <Sheet title="Report" onClose={onClose}>
       <form className="form" onSubmit={submit}>
-        <p className="note">Reports go to the Campus Adda team. The person you report won't see who reported them.</p>
+        <p className="note">Reports go to the Den team. The person you report won't see who reported them.</p>
         {err && <p className="err">{err}</p>}
         <div className="field">
           <label htmlFor="rp-reason">What's wrong?</label>

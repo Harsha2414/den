@@ -1,4 +1,4 @@
-/* Campus Adda: one phone-width column, sticky top bar, bottom tab bar, bottom sheets for forms. */
+/* Den: one phone-width column, sticky top bar, bottom tab bar, bottom sheets for forms. */
 :root {
   --paper: #F1F4F6; --surface: #FFFFFF; --ink: #172033; --muted: #566274; --line: #D8DFE5;
   --teal: #0E5E6F; --teal-soft: #DCEBEE; --hero: #0E5E6F; --on-hero: #FFFFFF;
@@ -36,7 +36,7 @@ button:disabled { cursor: default; }
 .top { position: sticky; top: 0; z-index: 20; background: var(--paper); border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px); }
 .bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 58px; }
 .brand { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: -.02em; white-space: nowrap; text-decoration: none; }
-.brand span { color: var(--teal); }
+.brand span { color: var(--saffron); }
 .acts { display: flex; gap: 8px; align-items: center; }
 .icon-btn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; width: 38px; height: 38px; display: grid; place-items: center; position: relative; text-decoration: none; flex: none; }
 .dot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--rose); }
@@ -200,6 +200,9 @@ button:disabled { cursor: default; }
 .onb h1 { font-family: var(--display); font-weight: 800; font-size: clamp(36px, 10vw, 48px); line-height: 1; letter-spacing: -.03em; margin: 0 0 12px; text-wrap: balance; }
 .onb h1 span { display: block; color: var(--teal); }
 .onb > p { color: var(--muted); margin: 0 0 24px; }
+.onb h1.logo { font-size: clamp(72px, 22vw, 104px); letter-spacing: -.05em; line-height: .9; margin-bottom: 14px; }
+.onb h1.logo .logo-dot { display: inline; color: var(--saffron); }
+.onb > p.tagline { font-family: var(--display); font-weight: 700; font-size: clamp(22px, 6vw, 28px); line-height: 1.15; color: var(--teal); margin: 0 0 12px; text-wrap: balance; }
 .code-input { letter-spacing: .4em; font-variant-numeric: tabular-nums; text-align: center; font-size: 22px !important; }
 
 /* Profile */

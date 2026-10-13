@@ -74,7 +74,7 @@ export default function ProfileForm({ userId, colleges, initial, onDone }: {
       <Field id="pf-branch" f={{ key: "branch", label: "Branch / course", type: "text", required: true, placeholder: "CSE, Mechanical, BCom, MBA...", max: 60 }} value={branch} onChange={setBranch} />
       <Field id="pf-year" f={{ key: "year", label: "Year", type: "select", options: YEARS }} value={year} onChange={setYear} />
       {initial && <Field id="pf-bio" f={{ key: "bio", label: "About you", type: "textarea", placeholder: "Clubs, interests, what you can help juniors with", max: 300 }} value={bio} onChange={setBio} />}
-      <button className="primary" disabled={busy}>{busy ? "Saving..." : initial ? "Save profile" : "Join Campus Adda"}</button>
+      <button className="primary" disabled={busy}>{busy ? "Saving..." : initial ? "Save profile" : "Join Den"}</button>
     </form>
   );
 }

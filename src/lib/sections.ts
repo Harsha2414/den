@@ -24,7 +24,7 @@ export const SECTIONS: Record<SectionKey, Section> = {
     fields: [
       { key: "body", label: "What's on your mind?", type: "textarea", required: true, placeholder: "Ask a doubt, share news, find a lost ID card...", max: 3000 },
       { key: "kind", label: "Type", type: "select", options: ["General", "Doubt", "Announcement", "Lost & found", "Hostel life"] },
-      { key: "visibility", label: "Who can see it", type: "select", options: VIS, hint: "My college: only students of your college. All India: every student on Campus Adda." },
+      { key: "visibility", label: "Who can see it", type: "select", options: VIS, hint: "My college: only students of your college. All India: every student on Den." },
     ],
     toRow: (v) => ({ body: v.body, kind: v.kind, visibility: v.visibility === "All India" ? "india" : "college" }),
   },
@@ -64,7 +64,7 @@ export const SECTIONS: Record<SectionKey, Section> = {
       { key: "item", label: "What are you selling?", type: "text", required: true, max: 100 },
       { key: "price", label: "Price (₹)", type: "number", required: true },
       { key: "condition", label: "Condition", type: "select", options: ["Like new", "Good", "Used"] },
-      { key: "contact", label: "Where to meet or how to reach you", type: "text", required: true, placeholder: "Hostel B, room 214, or message me here", max: 120, hint: "Avoid posting your phone number publicly. Buyers can message you on Campus Adda." },
+      { key: "contact", label: "Where to meet or how to reach you", type: "text", required: true, placeholder: "Hostel B, room 214, or message me here", max: 120, hint: "Avoid posting your phone number publicly. Buyers can message you on Den." },
       { key: "details", label: "Details", type: "textarea", max: 1000 },
     ],
     toRow: (v) => {
