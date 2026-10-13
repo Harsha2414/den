@@ -78,6 +78,13 @@ Tick these off as you go.
 3. Under **Authorized redirect URIs** add: `https://YOUR-PROJECT.supabase.co/auth/v1/callback` (use your Supabase Project URL).
 4. Copy the **Client ID** and **Client secret**, then in Supabase open **Authentication > Sign In / Providers > Google**, turn it on and paste both.
 
+> **"Error 400: redirect_uri_mismatch" when signing in with Google?** Google's redirect URI doesn't exactly match Supabase's callback.
+> 1. In Supabase open **Authentication > Sign In / Providers > Google** and copy the **Callback URL (for OAuth)** with its copy button.
+> 2. In Google Cloud open **APIs & Services > Credentials**, click your OAuth client, and paste it under **Authorized redirect URIs** (not JavaScript origins). Save.
+> 3. Wait about 5 minutes and try again in a private window.
+>
+> Don't put your Vercel link in Google's redirect URIs; it goes in Supabase's **URL Configuration**. On Google's error page, **see error details** shows the exact address that must be on the list.
+
 ### 3. LiveKit: voice for Spaces
 
 1. Go to [cloud.livekit.io](https://cloud.livekit.io) and create a project.
