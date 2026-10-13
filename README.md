@@ -26,13 +26,13 @@ Tick these off as you go.
 - [x] Code pushed to GitHub (`Harsha2414/den`)
 - [x] Supabase project created and both SQL files run
 - [x] Email sender (SMTP) set up: Gmail for testing
-- [ ] Email templates updated with `{{ .Token }}`
-- [ ] Supabase URL and keys copied
-- [ ] Google sign-in connected
-- [ ] LiveKit keys copied
-- [ ] Anthropic API key created
-- [ ] Deployed on Vercel with all keys
-- [ ] Vercel link added to Supabase URL settings
+- [x] Email templates updated with `{{ .Token }}`
+- [x] Supabase URL and keys copied
+- [x] Google sign-in connected
+- [x] LiveKit keys copied
+- [x] Anthropic API key created
+- [x] Deployed on Vercel with all keys
+- [x] Vercel link added to Supabase URL settings
 - [ ] Signed up and made yourself admin
 - [ ] Tested with 2 to 3 friends (post, message, join a Space, run a short debate)
 - [ ] Before public launch: own domain + Brevo/Resend sender, trademark check, privacy policy
