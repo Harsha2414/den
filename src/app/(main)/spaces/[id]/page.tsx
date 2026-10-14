@@ -1,9 +1,10 @@
 "use client";
-import { use, useCallback, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LiveKitRoom } from "@livekit/components-react";
-import { Room } from "livekit-client";
+import type { Room } from "livekit-client";
+import { newAudioRoom, takePrimedRoom } from "@/lib/primedRoom";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { AUTHOR_COLS, friendlyError, timeAgo, whenLabel } from "@/lib/format";
 import type { Space, SpaceParticipant } from "@/lib/types";
@@ -56,6 +57,23 @@ export default function SpacePage({ params }: { params: Promise<{ id: string }> 
 
   // Leave the audio room when the host ends the Space.
   useEffect(() => { if (space?.status === "ended") setConn(null); }, [space?.status]);
+  // Host who just tapped "Go live": go straight into the room.
+  const autoJoined = useRef(false);
+  useEffect(() => {
+    if (autoJoined.current || conn || joining || !space || space.status !== "live" || space.host_id !== me.id) return;
+    if (!window.location.search.includes("join=1")) return;
+    autoJoined.current = true;
+    window.history.replaceState(null, "", `/spaces/${id}`);
+    join(takePrimedRoom());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [space, conn, joining, me.id, id]);
+
+  async function goLive() {
+    const room = newAudioRoom(); // unlock sound inside this tap
+    if (await control({ action: "start" })) join(room);
+    else room.disconnect();
+  }
+
   // Close the audio connection whenever we leave the room or this page.
   useEffect(() => () => { conn?.room.disconnect(); }, [conn]);
 
@@ -70,12 +88,12 @@ export default function SpacePage({ params }: { params: Promise<{ id: string }> 
     return true;
   }, [id, toast, loadSpace, loadRows]);
 
-  async function join() {
-    // Unlock sound now, while we're still inside the student's tap. Phones only allow
-    // audio after a tap; mixing all voices through one unlocked audio channel means
-    // nobody has to tap again when others start speaking.
-    const room = new Room({ webAudioMix: true });
-    room.startAudio().catch(() => {});
+  async function join(primed?: Room | null) {
+    // Unlock sound now, while we're still inside the student's tap (or use the room
+    // unlocked during the host's "Go live" tap). Phones only allow audio after a tap;
+    // mixing all voices through one unlocked audio channel means nobody has to tap
+    // again when others start speaking.
+    const room = primed || newAudioRoom();
     setJoining(true);
     const res = await fetch(`/api/spaces/${id}/token`, { method: "POST" });
     const j = await res.json().catch(() => ({}));
@@ -132,7 +150,7 @@ export default function SpacePage({ params }: { params: Promise<{ id: string }> 
             <>
               <p style={{ marginTop: 0 }}>Your {debate ? "debate" : "Space"} {space.scheduled_for ? `is scheduled for ${whenLabel(space.scheduled_for)}` : "hasn't started"}. Start it whenever you're ready.</p>
               <div className="row">
-                <button className="primary" style={{ width: "auto", padding: "0 22px" }} onClick={() => control({ action: "start" })}><Icon name="radio" /> Go live</button>
+                <button className="primary" style={{ width: "auto", padding: "0 22px" }} onClick={goLive}><Icon name="radio" /> Go live</button>
                 <button className="secondary danger" onClick={() => (confirmDelete ? remove() : setConfirmDelete(true))}>{confirmDelete ? "Tap again to delete" : "Delete"}</button>
               </div>
             </>
@@ -146,7 +164,7 @@ export default function SpacePage({ params }: { params: Promise<{ id: string }> 
       {space.status === "live" && !conn && (
         <div className="card" style={{ marginTop: 12 }}>
           <p style={{ marginTop: 0 }}>{rows.filter((r) => !r.removed).length} people have joined. {isHost ? "Rejoin to keep hosting." : "You'll join as a listener. Raise your hand to ask to speak."}</p>
-          <button className="primary" onClick={join} disabled={joining}><Icon name="radio" /> {joining ? "Joining..." : isHost ? "Rejoin as host" : "Join and listen"}</button>
+          <button className="primary" onClick={() => join()} disabled={joining}><Icon name="radio" /> {joining ? "Joining..." : isHost ? "Rejoin as host" : "Join and listen"}</button>
           <p className="note" style={{ margin: "10px 0 0" }}>Spaces are live audio. Be respectful: hosts can remove people, and you can report anything that breaks the rules.</p>
         </div>
       )}

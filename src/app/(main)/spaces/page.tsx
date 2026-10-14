@@ -10,6 +10,7 @@ import { useToast } from "@/components/Toast";
 import Icon from "@/components/Icon";
 import Sheet from "@/components/Sheet";
 import Field from "@/components/Field";
+import { primeRoom } from "@/lib/primedRoom";
 
 type Filter = "all" | "space" | "debate";
 
@@ -102,13 +103,13 @@ export default function SpacesPage() {
 
       <button className="fab" onClick={() => setCreating(true)}><Icon name="plus" /> Start a Space</button>
       {creating && <CreateSpace meCollege={me.college_id} onClose={() => setCreating(false)}
-        onCreated={(id) => router.push(`/spaces/${id}`)} onError={(m) => toast(m)} />}
+        onCreated={(id, live) => router.push(live ? `/spaces/${id}?join=1` : `/spaces/${id}`)} onError={(m) => toast(m)} />}
     </main>
   );
 }
 
 function CreateSpace({ meCollege, onClose, onCreated, onError }: {
-  meCollege: string; onClose: () => void; onCreated: (id: string) => void; onError: (m: string) => void;
+  meCollege: string; onClose: () => void; onCreated: (id: string, live: boolean) => void; onError: (m: string) => void;
 }) {
   const supabase = supabaseBrowser();
   const [mode, setMode] = useState<"space" | "debate">("space");
@@ -132,6 +133,8 @@ function CreateSpace({ meCollege, onClose, onCreated, onError }: {
       if (!at || isNaN(d.getTime()) || d.getTime() < Date.now()) return setErr("Pick a start time in the future.");
       scheduled = d.toISOString();
     }
+    // Unlock sound inside this tap so the host can go straight into the room.
+    if (when === "Start now") primeRoom();
     setBusy(true); setErr("");
     const { data, error } = await supabase.from("spaces").insert({
       college_id: meCollege, title: title.trim(), description: description.trim(), mode,
@@ -140,11 +143,13 @@ function CreateSpace({ meCollege, onClose, onCreated, onError }: {
     }).select("id").single();
     if (error) { setBusy(false); return setErr(friendlyError(error, "Couldn't create the Space.")); }
     const id = (data as { id: string }).id;
+    let live = false;
     if (when === "Start now") {
       const res = await fetch(`/api/spaces/${id}/control`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start" }) });
-      if (!res.ok) onError("Space created, but it couldn't go live. Open it and tap Start.");
+      if (!res.ok) onError("Space created, but it couldn't go live. Open it and tap Go live.");
+      else live = true;
     }
-    onCreated(id);
+    onCreated(id, live);
   }
 
   return (
