@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import LegalPage from "@/components/LegalPage";
 
+// Read the operator and grievance details when the page loads, not at build time.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Community guidelines · Den" };
 
 export default function GuidelinesPage() {

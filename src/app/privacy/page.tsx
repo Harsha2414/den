@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import LegalPage, { Grievance } from "@/components/LegalPage";
 import { LEGAL } from "@/lib/legal";
 
+// Read the operator and grievance details when the page loads, not at build time.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Privacy policy · Den" };
 
 export default function PrivacyPage() {
