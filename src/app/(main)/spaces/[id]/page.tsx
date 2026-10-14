@@ -3,6 +3,7 @@ import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LiveKitRoom } from "@livekit/components-react";
+import { Room } from "livekit-client";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { AUTHOR_COLS, friendlyError, timeAgo, whenLabel } from "@/lib/format";
 import type { Space, SpaceParticipant } from "@/lib/types";
@@ -22,7 +23,7 @@ export default function SpacePage({ params }: { params: Promise<{ id: string }> 
   const [space, setSpace] = useState<Space | null | undefined>(undefined);
   const [rows, setRows] = useState<SpaceParticipant[]>([]);
   const [votes, setVotes] = useState<Vote[]>([]);
-  const [conn, setConn] = useState<{ token: string; url: string } | null>(null);
+  const [conn, setConn] = useState<{ token: string; url: string; room: Room } | null>(null);
   const [joining, setJoining] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -55,6 +56,8 @@ export default function SpacePage({ params }: { params: Promise<{ id: string }> 
 
   // Leave the audio room when the host ends the Space.
   useEffect(() => { if (space?.status === "ended") setConn(null); }, [space?.status]);
+  // Close the audio connection whenever we leave the room or this page.
+  useEffect(() => () => { conn?.room.disconnect(); }, [conn]);
 
   const control = useCallback(async (body: Record<string, unknown>) => {
     const res = await fetch(`/api/spaces/${id}/control`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -68,12 +71,17 @@ export default function SpacePage({ params }: { params: Promise<{ id: string }> 
   }, [id, toast, loadSpace, loadRows]);
 
   async function join() {
+    // Unlock sound now, while we're still inside the student's tap. Phones only allow
+    // audio after a tap; mixing all voices through one unlocked audio channel means
+    // nobody has to tap again when others start speaking.
+    const room = new Room({ webAudioMix: true });
+    room.startAudio().catch(() => {});
     setJoining(true);
     const res = await fetch(`/api/spaces/${id}/token`, { method: "POST" });
     const j = await res.json().catch(() => ({}));
     setJoining(false);
     if (!res.ok) return toast(j.error || "Couldn't join. Try again.");
-    setConn({ token: j.token, url: j.url });
+    setConn({ token: j.token, url: j.url, room });
     loadRows();
   }
 
@@ -144,7 +152,7 @@ export default function SpacePage({ params }: { params: Promise<{ id: string }> 
       )}
 
       {space.status === "live" && conn && (
-        <LiveKitRoom serverUrl={conn.url} token={conn.token} connect audio={false} video={false}
+        <LiveKitRoom room={conn.room} serverUrl={conn.url} token={conn.token} connect audio={false} video={false}
           onDisconnected={() => setConn(null)}
           onError={() => toast("Voice connection problem. Rejoin to try again.")}>
           <LiveRoom space={space} rows={rows} votes={votes} control={control} onLeave={() => setConn(null)} />
