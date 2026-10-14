@@ -34,7 +34,7 @@ Tick these off as you go.
 - [x] Deployed on Vercel with all keys
 - [x] Vercel link added to Supabase URL settings
 - [ ] Signed up and made yourself admin
-- [ ] Tested with 2 to 3 friends (post, message, join a Space, run a short debate)
+- [x] Tested core features: posts, messages, voice Spaces, debates, Ask a senior, Google + college-email sign-in
 - [ ] Before public launch: own domain + Brevo/Resend sender, trademark check, privacy policy
 
 ### 1. Supabase: database and sign-in
