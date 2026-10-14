@@ -111,6 +111,7 @@ Tick these off as you go.
    | `ANTHROPIC_API_KEY` | Anthropic API key |
    | `ANTHROPIC_MODEL` | `claude-sonnet-5-5` |
    | `AI_DAILY_LIMIT` | `20` |
+   | `NEXT_PUBLIC_EMAIL_CODES` | `on` (set `off` to show Google sign-in only, e.g. while your email sender isn't working) |
 
 3. Click **Deploy**. When it's done you get a link like `https://den-yourname.vercel.app` (you can add your own domain later).
 4. Back in Supabase, open **Authentication > URL Configuration**:
