@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  RoomAudioRenderer, StartAudio, useConnectionState, useLocalParticipant,
+  RoomAudioRenderer, useAudioPlayback, useConnectionState, useLocalParticipant,
   useLocalParticipantPermissions, useParticipants, useRoomContext,
 } from "@livekit/components-react";
 import { ConnectionState, RoomEvent, type Participant } from "livekit-client";
@@ -54,6 +54,11 @@ export default function LiveRoom({ space, rows, votes, control, onLeave }: {
   const [confirmEnd, setConfirmEnd] = useState(false);
   const secondsLeft = useClock(debate ? space.round_ends_at : null);
   const autoSent = useRef<number | null>(null);
+  const { canPlayAudio, startAudio } = useAudioPlayback(room);
+  // Remember that the student wants to talk, so the mic comes back on by itself
+  // when the host invites them again or their debate turn returns.
+  const wantMic = useRef(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const liveById = useMemo(() => new Map(live.map((p) => [p.identity, p])), [live]);
   const present = rows.filter((r) => !r.removed && liveById.has(r.user_id));
@@ -73,12 +78,23 @@ export default function LiveRoom({ space, rows, votes, control, onLeave }: {
   }, [isHost, debate, secondsLeft, round, space.round_index, control]);
 
   async function toggleMic() {
+    const next = !isMicrophoneEnabled;
     try {
-      await localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled);
+      if (!canPlayAudio) await startAudio();
+      await localParticipant.setMicrophoneEnabled(next);
+      wantMic.current = next;
     } catch {
+      wantMic.current = false;
       toast("Allow microphone access in your browser settings to speak.");
     }
   }
+
+  // Turn the mic back on automatically when speaking is allowed again.
+  useEffect(() => {
+    if (canPublish && wantMic.current && !isMicrophoneEnabled) {
+      localParticipant.setMicrophoneEnabled(true).catch(() => { wantMic.current = false; });
+    }
+  }, [canPublish, isMicrophoneEnabled, localParticipant]);
 
   async function toggleHand() {
     const next = !myRow?.hand_raised;
@@ -119,7 +135,16 @@ export default function LiveRoom({ space, rows, votes, control, onLeave }: {
   return (
     <div style={{ paddingBottom: 90 }}>
       <RoomAudioRenderer />
-      <StartAudio label="Tap to hear the Space" className="primary" />
+      {!canPlayAudio && (
+        <button className="sound-banner" onClick={() => startAudio().catch(() => toast("Tap again to turn on sound."))}>
+          <Icon name="radio" /> Sound is off on this phone. Tap here to hear the Space.
+        </button>
+      )}
+      {canPublish && !isMicrophoneEnabled && (
+        <p className="notice" style={{ marginTop: 12 }}>
+          {debate && myRow?.role !== "host" ? "It's your team's turn. " : "You can speak now. "}Tap <b>Unmute</b> below to talk.
+        </p>
+      )}
       {conn === ConnectionState.Reconnecting && <p className="warn">Connection dropped. Reconnecting...</p>}
 
       {debate && (
@@ -198,6 +223,7 @@ export default function LiveRoom({ space, rows, votes, control, onLeave }: {
           ) : (
             <span className="meta">{debate && myRow?.role === "speaker" ? "Your mic opens on your team's turn." : "Listening"}</span>
           )}
+          <button className="ghost" onClick={() => setHelpOpen(true)}>Can't hear?</button>
           {isHost && hands.length > 0 && (
             <button className="secondary" onClick={() => setHandsOpen(true)}><Icon name="hand" size={15} /> {hands.length} {hands.length === 1 ? "hand" : "hands"}</button>
           )}
@@ -211,6 +237,20 @@ export default function LiveRoom({ space, rows, votes, control, onLeave }: {
           )}
         </div>
       </div>
+
+      {helpOpen && (
+        <Sheet title="Can't hear or be heard?" onClose={() => setHelpOpen(false)}>
+          <div className="list">
+            <p className="body" style={{ margin: 0 }}><b>Turn on sound:</b> if you see an orange "Sound is off" bar, tap it. Phones block sound until you tap the page.</p>
+            <p className="body" style={{ margin: 0 }}><b>Check volume:</b> press your phone's volume-up button while someone talks, and turn off silent mode.</p>
+            <p className="body" style={{ margin: 0 }}><b>Check whose turn it is:</b> in a debate, only the team whose turn it is can talk. Everyone else is muted automatically.</p>
+            <p className="body" style={{ margin: 0 }}><b>Speaker can't be heard?</b> They must tap <b>Unmute</b> and allow the microphone when the phone asks. A mic icon under their photo means their mic is on.</p>
+            <p className="body" style={{ margin: 0 }}><b>Same room?</b> Use headphones, or sit apart. Phones next to each other cancel each other's sound.</p>
+            <p className="body" style={{ margin: 0 }}><b>Still nothing?</b> Leave and rejoin the Space, or try Chrome.</p>
+          </div>
+          {!canPlayAudio && <button className="primary" style={{ marginTop: 14 }} onClick={() => startAudio()}>Turn on sound</button>}
+        </Sheet>
+      )}
 
       {handsOpen && (
         <Sheet title="Raised hands" onClose={() => setHandsOpen(false)}>

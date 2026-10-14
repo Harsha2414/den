@@ -215,3 +215,5 @@ button:disabled { cursor: default; }
 @media (max-width: 420px) {
   .teams { grid-template-columns: 1fr; }
 }
+
+.sound-banner { width: 100%; margin-top: 12px; border: none; border-radius: 12px; padding: 14px 16px; background: var(--saffron); color: #172033; font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px; text-align: left; }
