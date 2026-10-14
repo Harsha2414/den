@@ -25,7 +25,7 @@ Tick these off as you go.
 
 - [x] Code pushed to GitHub (`Harsha2414/den`)
 - [x] Supabase project created and both SQL files run
-- [x] Email sender (SMTP) set up: Gmail for testing
+- [x] Email sender (SMTP) set up: Brevo (Gmail sender, for testing)
 - [x] Email templates updated with `{{ .Token }}`
 - [x] Supabase URL and keys copied
 - [x] Google sign-in connected
