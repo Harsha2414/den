@@ -11,6 +11,8 @@ export interface Profile {
   bio: string;
   verified: boolean;
   is_admin: boolean;
+  /** null = hasn't agreed yet; undefined = column not added yet (treated as agreed) */
+  terms_accepted_at?: string | null;
 }
 
 export type Author = Pick<Profile, "id" | "name" | "branch" | "year" | "verified" | "college_id">;

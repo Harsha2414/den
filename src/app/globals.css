@@ -217,3 +217,23 @@ button:disabled { cursor: default; }
 }
 
 .sound-banner { width: 100%; margin-top: 12px; border: none; border-radius: 12px; padding: 14px 16px; background: var(--saffron); color: #172033; font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px; text-align: left; }
+
+/* Policy pages */
+.legal { max-width: 720px; margin: 0 auto; padding: 0 16px 80px; }
+.legal-top { padding-block: 18px 6px; }
+.legal-nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 22px; }
+.legal h1 { font-family: var(--display); font-weight: 800; font-size: clamp(30px, 8vw, 44px); letter-spacing: -.03em; line-height: 1.05; margin: 0; text-wrap: balance; }
+.legal-date { color: var(--muted); margin: 6px 0 22px; font-size: 14px; }
+.legal-body { line-height: 1.65; max-width: 68ch; }
+.legal-body h2 { font-family: var(--display); font-size: 21px; margin: 30px 0 8px; }
+.legal-body ul { padding-left: 20px; margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+.legal-body a { color: var(--teal); font-weight: 600; }
+.legal-foot { border-top: 1px solid var(--line); margin-top: 36px; padding-top: 18px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; color: var(--muted); }
+.legal-foot p { margin: 0; }
+.policy-links { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; font-size: 13px; color: var(--muted); margin-top: 22px; }
+.policy-links a { color: var(--muted); }
+.agree { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45; }
+.agree input { width: 20px; height: 20px; margin-top: 1px; flex: none; accent-color: var(--teal); }
+.agree a { color: var(--teal); font-weight: 600; }
+.danger-zone { border: 1px solid var(--rose); border-radius: 14px; padding: 14px 16px; margin-top: 28px; }
+.danger-zone h3 { margin: 0 0 6px; font-family: var(--display); color: var(--rose); }

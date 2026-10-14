@@ -26,6 +26,7 @@ export default function ProfileForm({ userId, colleges, initial, onDone }: {
   const [branch, setBranch] = useState(initial?.branch || "");
   const [year, setYear] = useState<string>(initial?.year || YEARS[0]);
   const [bio, setBio] = useState(initial?.bio || "");
+  const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -33,6 +34,7 @@ export default function ProfileForm({ userId, colleges, initial, onDone }: {
     e.preventDefault();
     if (!name.trim() || !branch.trim()) return setErr("Add your name and branch to continue.");
     if (!college) return setErr("Choose your college.");
+    if (!initial && !agreed) return setErr("Confirm you're 18 or older and agree to the terms to continue.");
     if (college === NEW && newName.trim().length < 2) return setErr("Add your college's name to continue.");
     setBusy(true); setErr("");
     let collegeId = college;
@@ -44,7 +46,7 @@ export default function ProfileForm({ userId, colleges, initial, onDone }: {
     const row = { name: name.trim(), college_id: collegeId, branch: branch.trim(), year, bio: bio.trim() };
     const { error } = initial
       ? await supabase.from("profiles").update(row).eq("id", userId)
-      : await supabase.from("profiles").insert({ id: userId, ...row });
+      : await supabase.from("profiles").insert({ id: userId, ...row, terms_accepted_at: new Date().toISOString() });
     setBusy(false);
     if (error) return setErr(friendlyError(error, "Couldn't save your profile. Try again."));
     if (onDone) onDone();
@@ -74,6 +76,12 @@ export default function ProfileForm({ userId, colleges, initial, onDone }: {
       <Field id="pf-branch" f={{ key: "branch", label: "Branch / course", type: "text", required: true, placeholder: "CSE, Mechanical, BCom, MBA...", max: 60 }} value={branch} onChange={setBranch} />
       <Field id="pf-year" f={{ key: "year", label: "Year", type: "select", options: YEARS }} value={year} onChange={setYear} />
       {initial && <Field id="pf-bio" f={{ key: "bio", label: "About you", type: "textarea", placeholder: "Clubs, interests, what you can help juniors with", max: 300 }} value={bio} onChange={setBio} />}
+      {!initial && (
+        <label className="agree">
+          <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+          <span>I&rsquo;m 18 or older, and I agree to Den&rsquo;s <a href="/terms" target="_blank">terms of use</a>, <a href="/privacy" target="_blank">privacy policy</a> and <a href="/guidelines" target="_blank">community guidelines</a>.</span>
+        </label>
+      )}
       <button className="primary" disabled={busy}>{busy ? "Saving..." : initial ? "Save profile" : "Join Den"}</button>
     </form>
   );
