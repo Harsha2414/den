@@ -62,6 +62,8 @@ export default function MePage() {
           </div>
         ))}
 
+      <p className="note" style={{ marginTop: 24 }}>App version {(process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || "local").slice(0, 7)}</p>
+
       {editing && (
         <Sheet title="Edit profile" onClose={() => setEditing(false)}>
           <ProfileForm userId={me.id} colleges={colleges} initial={me} onDone={() => setEditing(false)} />
