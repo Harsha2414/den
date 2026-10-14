@@ -35,7 +35,8 @@ Tick these off as you go.
 - [x] Vercel link added to Supabase URL settings
 - [ ] Signed up and made yourself admin
 - [x] Tested core features: posts, messages, voice Spaces, debates, Ask a senior, Google + college-email sign-in
-- [ ] Before public launch: own domain + Brevo/Resend sender, trademark check, privacy policy
+- [x] Privacy policy, terms, community guidelines, 18+ agreement, Delete my account
+- [ ] Before public launch: own domain + Brevo/Resend sender, trademark check, lawyer review of policies
 
 ### 1. Supabase: database and sign-in
 
