@@ -1,8 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { friendlyError, looksAcademic } from "@/lib/format";
+import PolicyLinks from "@/components/PolicyLinks";
 
 // Set NEXT_PUBLIC_EMAIL_CODES=off in Vercel (then redeploy) to hide email-code sign-in until an email sender works.
 const EMAIL_CODES_ON = process.env.NEXT_PUBLIC_EMAIL_CODES !== "off";
@@ -14,6 +15,8 @@ export default function LoginPage() {
   const [stage, setStage] = useState<"email" | "code">("email");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [deletedNotice, setDeletedNotice] = useState(false);
+  useEffect(() => { setDeletedNotice(window.location.search.includes("deleted=1")); }, []);
 
   async function google() {
     const supabase = supabaseBrowser();
@@ -71,6 +74,7 @@ export default function LoginPage() {
       <p>Your college's own home for notes, PYQs, placement stories, voice Spaces, live debates and events, plus one feed shared across India.</p>
 
       <div className="form">
+        {deletedNotice && <p className="notice">Your account has been deleted. Thanks for being part of Den.</p>}
         {err && <p className="err" role="alert">{err}</p>}
         {stage === "email" ? (
           <>
@@ -102,6 +106,8 @@ export default function LoginPage() {
           </form>
         )}
       </div>
+      <p className="note" style={{ textAlign: "center", marginTop: 20 }}>Den is for students aged 18 and over. By continuing, you agree to our terms and privacy policy.</p>
+      <PolicyLinks />
     </main>
   );
 }

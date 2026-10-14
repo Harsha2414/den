@@ -41,8 +41,9 @@ Tick these off as you go.
 
 1. Go to [supabase.com](https://supabase.com) and create a new project. Pick the **Mumbai (ap-south-1)** region so it's fast for Indian students. Save the database password somewhere safe.
 2. Open **SQL Editor**, then **New query**. Paste everything from `supabase/migrations/0001_init.sql` and click **Run**. You should see "Success".
-3. Make another new query, paste `supabase/seed.sql` and click **Run**. This adds 50 well-known colleges. Students can add their own college when they sign up.
-4. **Set up an email sender (required for college-email codes).** Supabase's built-in sender only emails members of your own Supabase team, so students won't get codes without this. Open **Authentication > Emails > SMTP Settings**, turn on **Enable custom SMTP**, and pick one:
+3. Make another new query, paste `supabase/migrations/0002_launch_basics.sql` and click **Run** (terms agreement and cleanup).
+4. Make another new query, paste `supabase/seed.sql` and click **Run**. This adds 50 well-known colleges. Students can add their own college when they sign up.
+5. **Set up an email sender (required for college-email codes).** Supabase's built-in sender only emails members of your own Supabase team, so students won't get codes without this. Open **Authentication > Emails > SMTP Settings**, turn on **Enable custom SMTP**, and pick one:
 
    **For testing: your Gmail** (a few hundred emails a day; codes may land in spam)
    1. Turn on 2-Step Verification for your Google account.
@@ -56,7 +57,7 @@ Tick these off as you go.
 
    After saving, Supabase allows about 30 emails an hour. Raise it under **Authentication > Rate Limits** when more students join.
 
-5. Open **Authentication > Emails > Templates**. In both **Confirm sign up** and **Magic link or OTP**, switch the message editor to its **Source** (code) view and replace the body with:
+6. Open **Authentication > Emails > Templates**. In both **Confirm sign up** and **Magic link or OTP**, switch the message editor to its **Source** (code) view and replace the body with:
 
    ```html
    <h2>Your Den sign-in code</h2>
@@ -66,7 +67,7 @@ Tick these off as you go.
 
    Set the subject of both to `Your Den sign-in code` and save each one.
 
-6. Open **Project Settings > API** (or **API Keys**) and copy:
+7. Open **Project Settings > API** (or **API Keys**) and copy:
    - the **Project URL**
    - the **anon** key (newer projects call it the **publishable** key)
    - the **service_role** key (newer projects: **secret** key). Keep this one secret and never put it in code or share it.
@@ -112,6 +113,11 @@ Tick these off as you go.
    | `ANTHROPIC_MODEL` | `claude-sonnet-5-5` |
    | `AI_DAILY_LIMIT` | `20` |
    | `NEXT_PUBLIC_EMAIL_CODES` | `on` (set `off` to show Google sign-in only, e.g. while your email sender isn't working) |
+   | `NEXT_PUBLIC_LEGAL_OPERATOR` | Your full name or company name (shown on policy pages) |
+   | `NEXT_PUBLIC_LEGAL_CITY` | City, State |
+   | `NEXT_PUBLIC_CONTACT_EMAIL` | Email for privacy requests |
+   | `NEXT_PUBLIC_GRIEVANCE_OFFICER` | Grievance Officer's full name (required by India's IT Rules) |
+   | `NEXT_PUBLIC_GRIEVANCE_EMAIL` | Email for complaints |
 
 3. Click **Deploy**. When it's done you get a link like `https://den-yourname.vercel.app` (you can add your own domain later).
 4. Back in Supabase, open **Authentication > URL Configuration**:
