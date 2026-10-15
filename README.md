@@ -43,6 +43,7 @@ Tick these off as you go.
 1. Go to [supabase.com](https://supabase.com) and create a new project. Pick the **Mumbai (ap-south-1)** region so it's fast for Indian students. Save the database password somewhere safe.
 2. Open **SQL Editor**, then **New query**. Paste everything from `supabase/migrations/0001_init.sql` and click **Run**. You should see "Success".
 3. Make another new query, paste `supabase/migrations/0002_launch_basics.sql` and click **Run** (terms agreement and cleanup).
+   Then do the same with `supabase/migrations/0003_events.sql` (RSVPs, tickets, co-organisers, event updates).
 4. Make another new query, paste `supabase/seed.sql` and click **Run**. This adds 50 well-known colleges. Students can add their own college when they sign up.
 5. **Set up an email sender (required for college-email codes).** Supabase's built-in sender only emails members of your own Supabase team, so students won't get codes without this. Open **Authentication > Emails > SMTP Settings**, turn on **Enable custom SMTP**, and pick one:
 

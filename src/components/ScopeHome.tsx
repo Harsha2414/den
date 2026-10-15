@@ -1,14 +1,17 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { AUTHOR_COLS, friendlyError, timeAgo } from "@/lib/format";
 import { LIKE_TYPE_OF, REPORT_TYPE_OF, SECTIONS, type SectionKey } from "@/lib/sections";
-import type { AnyItem, Space } from "@/lib/types";
+import type { AnyItem, CampusEvent, RsvpStatus, Space } from "@/lib/types";
+import { todayIST } from "@/lib/events";
 import { useApp } from "./AppContext";
 import { useToast } from "./Toast";
 import Icon from "./Icon";
 import ItemCard from "./ItemCard";
+import EventCard from "./EventCard";
 import Composer from "./Composer";
 import ReportSheet from "./ReportSheet";
 
@@ -18,6 +21,7 @@ const COLLEGE_TABS: SectionKey[] = ["posts", "notes", "placements", "listings", 
 export default function ScopeHome({ scope, initialTab }: { scope: string; initialTab?: string }) {
   const { me, college } = useApp();
   const toast = useToast();
+  const router = useRouter();
   const supabase = supabaseBrowser();
   const india = scope === "india";
   const sc = college(scope);
@@ -25,6 +29,7 @@ export default function ScopeHome({ scope, initialTab }: { scope: string; initia
   const tabs = india ? INDIA_TABS : COLLEGE_TABS;
   const [tab, setTab] = useState<SectionKey>(tabs.includes(initialTab as SectionKey) ? (initialTab as SectionKey) : "posts");
   const [items, setItems] = useState<AnyItem[] | null>(null);
+  const [rsvpMap, setRsvpMap] = useState<Record<string, { going: number; mine: RsvpStatus | null }>>({});
   const [likeMap, setLikeMap] = useState<Record<string, { n: number; mine: boolean }>>({});
   const [liveSpaces, setLiveSpaces] = useState<Space[]>([]);
   const [query, setQuery] = useState("");
@@ -40,8 +45,7 @@ export default function ScopeHome({ scope, initialTab }: { scope: string; initia
     if (tab === "posts" && india) q = q.eq("visibility", "india");
     if (!india) q = q.eq("college_id", scope);
     if (tab === "events") {
-      const today = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
-      q = q.gte("event_date", today).order("event_date", { ascending: true });
+      q = q.gte("event_date", todayIST()).order("event_date", { ascending: true });
     } else {
       q = q.order("created_at", { ascending: false });
     }
@@ -49,6 +53,17 @@ export default function ScopeHome({ scope, initialTab }: { scope: string; initia
     if (err) { setItems([]); setError(friendlyError(err, "Couldn't load this page. Pull to refresh or try again.")); return; }
     const rows = (data || []) as unknown as AnyItem[];
     setItems(rows);
+
+    if (tab === "events" && rows.length) {
+      const { data: rs } = await supabase.from("event_rsvps").select("event_id,user_id,status").in("event_id", rows.map((r) => r.id));
+      const m: Record<string, { going: number; mine: RsvpStatus | null }> = {};
+      (rs || []).forEach((x: { event_id: string; user_id: string; status: RsvpStatus }) => {
+        const e = (m[x.event_id] ||= { going: 0, mine: null });
+        if (x.status === "going") e.going++;
+        if (x.user_id === me.id) e.mine = x.status;
+      });
+      setRsvpMap(m);
+    }
 
     const likeType = LIKE_TYPE_OF[tab];
     if (likeType && rows.length) {
@@ -144,7 +159,9 @@ export default function ScopeHome({ scope, initialTab }: { scope: string; initia
 
       <div className="sec-head">
         <h2>{sec.label}</h2>
-        {shown && <small>{shown.length} {shown.length === 1 ? "item" : "items"}</small>}
+        {tab === "events"
+          ? <Link className="link-btn" href="/events" style={{ marginTop: 0 }}><Icon name="clock" size={15} /> My events</Link>
+          : shown && <small>{shown.length} {shown.length === 1 ? "item" : "items"}</small>}
       </div>
 
       {!canPostHere && <p className="notice">You're browsing {sc?.name || "another college"}. You can read and react here; new posts go to your own college.</p>}
@@ -163,7 +180,10 @@ export default function ScopeHome({ scope, initialTab }: { scope: string; initia
           </div>
         ) : (
           <div className="list">
-            {shown.map((item) => (
+            {shown.map((item) => tab === "events" ? (
+              <EventCard key={item.id} ev={item as CampusEvent} showCollege={india}
+                going={rsvpMap[item.id]?.going || 0} mine={rsvpMap[item.id]?.mine} organiser={item.author_id === me.id} />
+            ) : (
               <ItemCard key={item.id} type={tab} item={item} showCollege={india}
                 likes={likeMap[item.id]?.n || 0} liked={!!likeMap[item.id]?.mine}
                 actions={{
@@ -177,7 +197,7 @@ export default function ScopeHome({ scope, initialTab }: { scope: string; initia
         )}
 
       {canPostHere && <button className="fab" onClick={() => setComposing(true)}><Icon name="plus" /> {sec.cta}</button>}
-      {composing && <Composer section={tab} defaultIndia={india} onClose={() => setComposing(false)} onPosted={() => { setComposing(false); load(); }} />}
+      {composing && <Composer section={tab} defaultIndia={india} onClose={() => setComposing(false)} onPosted={(id) => { setComposing(false); if (tab === "events" && id) router.push(`/events/${id}`); else load(); }} />}
       {reporting && <ReportSheet targetType={REPORT_TYPE_OF[tab]} targetId={reporting} onClose={() => setReporting(null)} />}
     </main>
   );

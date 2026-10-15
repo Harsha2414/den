@@ -16,6 +16,8 @@ export interface Section {
 }
 
 const VIS = ["My college", "All India"] as const;
+export const EVENT_KINDS = ["Fest", "Hackathon", "Workshop", "Talk", "Club recruitment", "Sports", "Cultural", "Meetup", "Other"] as const;
+export const TICKET_OPTIONS = ["No ticket needed", "Free ticket with QR check-in"] as const;
 
 export const SECTIONS: Record<SectionKey, Section> = {
   posts: {
@@ -74,25 +76,39 @@ export const SECTIONS: Record<SectionKey, Section> = {
     },
   },
   events: {
-    key: "events", label: "Events", cta: "Add event", likeType: "event", likeLabel: "Interested",
-    empty: "No upcoming events. Add your club's next fest, workshop or hackathon.",
+    key: "events", label: "Events", cta: "Create an event",
+    empty: "No upcoming events. Create your club's next fest, workshop or hackathon.",
     fields: [
       { key: "title", label: "Event name", type: "text", required: true, max: 120 },
-      { key: "kind", label: "Type", type: "select", options: ["Fest", "Hackathon", "Workshop", "Club recruitment", "Sports", "Cultural"] },
+      { key: "kind", label: "Type", type: "select", options: EVENT_KINDS },
       { key: "event_date", label: "Date", type: "date", required: true },
-      { key: "venue", label: "Venue", type: "text", max: 120 },
-      { key: "link", label: "Registration link", type: "url", placeholder: "https://" },
-      { key: "details", label: "Details", type: "textarea", max: 2000 },
+      { key: "start_time", label: "Starts at", type: "time" },
+      { key: "end_time", label: "Ends at", type: "time" },
+      { key: "venue", label: "Venue", type: "text", max: 120, placeholder: "Main auditorium" },
+      { key: "tickets", label: "Entry", type: "select", options: TICKET_OPTIONS, hint: "With tickets, everyone who taps Going gets a QR code, and you scan it at the door." },
+      { key: "capacity", label: "Seat limit", type: "number", placeholder: "Leave empty for no limit", hint: "Going stops when the event is full. Students can still tap Interested." },
+      { key: "link", label: "Outside registration link (optional)", type: "url", placeholder: "https://" },
+      { key: "details", label: "Details", type: "textarea", max: 2000, placeholder: "What's happening, who it's for, what to bring" },
     ],
     toRow: (v) => {
       if (v.link && !/^https?:\/\//i.test(v.link)) return "Links must start with https://";
-      return { title: v.title, kind: v.kind, event_date: v.event_date, venue: v.venue, link: v.link, details: v.details };
+      let capacity: number | null = null;
+      if (v.capacity) {
+        capacity = parseInt(v.capacity, 10);
+        if (!Number.isFinite(capacity) || capacity < 1) return "Seat limit must be 1 or more, or left empty.";
+      }
+      if (v.start_time && v.end_time && v.end_time <= v.start_time) return "The end time must be after the start time.";
+      if (v.end_time && !v.start_time) return "Add a start time too.";
+      return {
+        title: v.title, kind: v.kind, event_date: v.event_date, venue: v.venue, link: v.link, details: v.details,
+        start_time: v.start_time || null, end_time: v.end_time || null, capacity, tickets: v.tickets === TICKET_OPTIONS[1],
+      };
     },
   },
 };
 
 export const LIKE_TYPE_OF: Record<SectionKey, LikeType | undefined> = {
-  posts: "post", notes: "note", placements: "placement", listings: undefined, events: "event",
+  posts: "post", notes: "note", placements: "placement", listings: undefined, events: undefined,
 };
 
 export const REPORT_TYPE_OF: Record<SectionKey, string> = {

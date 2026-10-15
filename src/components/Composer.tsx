@@ -8,15 +8,20 @@ import { useToast } from "./Toast";
 import Field from "./Field";
 import Sheet from "./Sheet";
 
-export default function Composer({ section, defaultIndia, onClose, onPosted }: {
-  section: SectionKey; defaultIndia: boolean; onClose: () => void; onPosted: () => void;
+export default function Composer({ section, defaultIndia, onClose, onPosted, editId, initial }: {
+  section: SectionKey; defaultIndia: boolean; onClose: () => void;
+  /** Called with the new or edited row's id. */
+  onPosted: (id?: string) => void;
+  /** When set, the form edits this row instead of creating a new one. */
+  editId?: string;
+  initial?: Record<string, string>;
 }) {
   const { me, collegeName } = useApp();
   const toast = useToast();
   const sec = SECTIONS[section];
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(sec.fields.map((f) => [
     f.key,
-    f.key === "visibility" ? (defaultIndia ? "All India" : "My college") : f.initial ?? (f.type === "select" ? f.options![0] : ""),
+    initial?.[f.key] ?? (f.key === "visibility" ? (defaultIndia ? "All India" : "My college") : f.initial ?? (f.type === "select" ? f.options![0] : "")),
   ])));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -29,22 +34,26 @@ export default function Composer({ section, defaultIndia, onClose, onPosted }: {
     const row = sec.toRow(v);
     if (typeof row === "string") return setErr(row);
     setBusy(true); setErr("");
-    const { error } = await supabaseBrowser().from(section).insert({ ...row, college_id: me.college_id });
+    const supabase = supabaseBrowser();
+    const { data, error } = editId
+      ? await supabase.from(section).update(row).eq("id", editId).select("id").maybeSingle()
+      : await supabase.from(section).insert({ ...row, college_id: me.college_id }).select("id").single();
     setBusy(false);
-    if (error) return setErr(friendlyError(error, "Couldn't post that. Try again."));
-    toast("Posted");
-    onPosted();
+    if (error) return setErr(friendlyError(error, editId ? "Couldn't save your changes. Try again." : "Couldn't post that. Try again."));
+    if (editId && !data) return setErr("You can't edit this anymore.");
+    toast(editId ? "Saved" : "Posted");
+    onPosted((data as { id: string } | null)?.id);
   }
 
   return (
-    <Sheet title={sec.cta} onClose={onClose}>
-      <p className="note">Posting to {collegeName(me.college_id)}.</p>
+    <Sheet title={editId ? "Edit" : sec.cta} onClose={onClose}>
+      {!editId && <p className="note">Posting to {collegeName(me.college_id)}.</p>}
       <form className="form" onSubmit={submit}>
         {err && <p className="err" role="alert">{err}</p>}
         {sec.fields.map((f) => (
           <Field key={f.key} id={`c-${section}-${f.key}`} f={f} value={values[f.key]} onChange={(x) => setValues((s) => ({ ...s, [f.key]: x }))} />
         ))}
-        <button className="primary" disabled={busy}>{busy ? "Posting..." : "Post"}</button>
+        <button className="primary" disabled={busy}>{busy ? (editId ? "Saving..." : "Posting...") : editId ? "Save changes" : section === "events" ? "Create event" : "Post"}</button>
       </form>
     </Sheet>
   );
