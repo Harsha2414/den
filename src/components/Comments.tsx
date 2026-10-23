@@ -9,7 +9,7 @@ import { useToast } from "./Toast";
 import Icon from "./Icon";
 
 export default function Comments({ postId, onCount }: { postId: string; onCount: (n: number) => void }) {
-  const { me } = useApp();
+  const { me, canAct } = useApp();
   const toast = useToast();
   const supabase = supabaseBrowser();
   const [list, setList] = useState<Comment[] | null>(null);
@@ -51,11 +51,11 @@ export default function Comments({ postId, onCount }: { postId: string; onCount:
             {c.author_id === me.id && <button className="ghost" style={{ marginLeft: 6 }} onClick={() => remove(c.id)} aria-label="Delete comment"><Icon name="trash" size={13} /></button>}
           </div>
         ))}
-      <div className="inline">
+      {!canAct ? <a className="link-btn" href="/verify" style={{ marginTop: 2 }}><Icon name="lock" size={14} /> Verify to comment</a> : <div className="inline">
         <input value={text} maxLength={1000} placeholder="Write a comment" aria-label="Write a comment"
           onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
         <button onClick={send} disabled={busy || !text.trim()} aria-label="Send comment"><Icon name="send" size={16} /></button>
-      </div>
+      </div>}
     </div>
   );
 }

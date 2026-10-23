@@ -16,7 +16,7 @@ import ReportSheet from "@/components/ReportSheet";
 
 export default function ChatPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { me } = useApp();
+  const { me, canAct } = useApp();
   const router = useRouter();
   const toast = useToast();
   const supabase = supabaseBrowser();
@@ -140,14 +140,14 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
           <div ref={endRef} />
         </div>
 
-        <div className="composer">
+        {!canAct ? <div className="composer" style={{ justifyContent: "center" }}><a className="link-btn" href="/verify" style={{ margin: 0 }}><Icon name="lock" size={15} /> Verify your student account to send messages</a></div> : <div className="composer">
           {blockedNote && <p className="warn">{blockedNote}</p>}
           <div className="inline">
             <input value={text} maxLength={4000} placeholder="Write a message" aria-label="Write a message"
               onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} />
             <button onClick={send} disabled={sending || !text.trim()} aria-label="Send message"><Icon name="send" size={16} /></button>
           </div>
-        </div>
+        </div>}
       </div>
 
       {menu && (

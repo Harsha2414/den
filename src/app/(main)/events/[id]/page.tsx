@@ -1,4 +1,5 @@
 "use client";
+import { useGate } from "@/components/Gate";
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,6 +33,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
   const { me, collegeName } = useApp();
   const router = useRouter();
   const toast = useToast();
+  const gate = useGate();
   const supabase = supabaseBrowser();
 
   const [ev, setEv] = useState<CampusEvent | null | undefined>(undefined);
@@ -90,6 +92,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
   const pageUrl = typeof window !== "undefined" ? `${window.location.origin}/events/${ev.id}` : "";
 
   async function rsvp(choice: RsvpStatus) {
+    if (!gate("RSVP to events")) return;
     setBusy(true);
     const { error } = await supabase.rpc("rsvp_event", { ev: id, choice });
     setBusy(false);

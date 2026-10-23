@@ -1,4 +1,5 @@
 "use client";
+import { useGate } from "@/components/Gate";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -24,6 +25,7 @@ export default function EventsPage() {
   const { me, collegeName } = useApp();
   const supabase = supabaseBrowser();
   const router = useRouter();
+  const gate = useGate();
   const initial = useSearchParams().get("tab") as Tab | null;
   const [tab, setTab] = useState<Tab>(initial && initial in LABEL ? initial : "upcoming");
   const [everywhere, setEverywhere] = useState(false);
@@ -110,7 +112,7 @@ export default function EventsPage() {
           <div className="empty" style={{ marginTop: 16 }}>
             {EMPTY[tab]}
             {tab === "upcoming" || tab === "organising"
-              ? <button className="secondary" onClick={() => setComposing(true)}>Create an event</button>
+              ? <button className="secondary" onClick={() => { if (gate("create events")) setComposing(true); }}>Create an event</button>
               : <button className="secondary" onClick={() => setTab("upcoming")}>Find events</button>}
           </div>
         ) : (
@@ -123,7 +125,7 @@ export default function EventsPage() {
             </>}
           </>
         )}
-      <button className="fab" onClick={() => setComposing(true)} aria-label="Create an event"><Icon name="plus" size={24} /><span>Create an event</span></button>
+      <button className="fab" onClick={() => { if (gate("create events")) setComposing(true); }} aria-label="Create an event"><Icon name="plus" size={24} /><span>Create an event</span></button>
       {composing && <Composer section="events" defaultIndia={false} onClose={() => setComposing(false)}
         onPosted={(id) => { setComposing(false); if (id) router.push(`/events/${id}`); }} />}
     </main>

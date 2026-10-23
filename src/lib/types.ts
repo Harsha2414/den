@@ -13,7 +13,13 @@ export interface Profile {
   is_admin: boolean;
   /** null = hasn't agreed yet; undefined = column not added yet (treated as agreed) */
   terms_accepted_at?: string | null;
+  verified_via?: "email" | "college_email" | "id_card" | "classmates" | "admin" | null;
+  verified_at?: string | null;
+  banned_at?: string | null;
 }
+
+/** full = verified; grace = existing account, can post until a date; read = must verify; banned = suspended. */
+export interface Access { level: "full" | "grace" | "read" | "banned"; grace_until?: string | null }
 
 export type Author = Pick<Profile, "id" | "name" | "branch" | "year" | "verified" | "college_id">;
 

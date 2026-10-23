@@ -29,7 +29,7 @@ export const AUTHOR_COLS = "id,name,branch,year,verified,college_id";
 export function friendlyError(e: { message?: string; code?: string } | null | undefined, fallback = "Something went wrong. Try again."): string {
   if (!e) return fallback;
   const m = e.message || "";
-  if (/row-level security|permission denied/i.test(m)) return "You don't have permission to do that.";
+  if (/row-level security|permission denied/i.test(m)) return "You can't do that. If you haven't verified your student account yet, verify it first (menu → Get your blue tick).";
   if (/violates check constraint/i.test(m)) return "Some details are missing or too long. Check the form and try again.";
   if (/duplicate key/i.test(m)) return "That already exists.";
   if (/Failed to fetch|NetworkError/i.test(m)) return "Couldn't reach the server. Check your connection and try again.";

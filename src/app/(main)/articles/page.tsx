@@ -14,7 +14,7 @@ type Tab = "india" | "college" | "mine";
 const TABS: Record<Tab, string> = { india: "All India", college: "My college", mine: "Mine" };
 
 export default function ArticlesPage() {
-  const { me, collegeName } = useApp();
+  const { me, collegeName, canAct } = useApp();
   const supabase = supabaseBrowser();
   const initial = useSearchParams().get("tab") as Tab | null;
   const [tab, setTab] = useState<Tab>(initial && initial in TABS ? initial : "india");
@@ -94,7 +94,7 @@ export default function ArticlesPage() {
         </div>
       )}
 
-      <Link href="/articles/new" className="fab" aria-label="Write an article"><Icon name="pen" size={22} /><span>Write</span></Link>
+      <Link href={canAct ? "/articles/new" : "/verify"} className="fab" aria-label="Write an article"><Icon name="pen" size={22} /><span>Write</span></Link>
     </main>
   );
 }

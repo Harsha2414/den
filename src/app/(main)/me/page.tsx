@@ -64,7 +64,7 @@ export default function MePage() {
         </div>
       </div>
       {me.bio && <p className="body">{me.bio}</p>}
-      {!me.verified && <p className="notice">Sign in with your college email to get the verified student badge.</p>}
+      {!me.verified && <Link className="notice" href="/verify" style={{ display: "block", textDecoration: "none" }}><b>Get your blue tick.</b> Verify you&rsquo;re a student with your college email, ID card or classmates. Until then you can look around but not post or message.</Link>}
 
       <div className="row" style={{ marginBottom: 20 }}>
         <button className="secondary" onClick={() => setEditing(true)}>Edit profile</button>

@@ -1,4 +1,5 @@
 "use client";
+import { useGate } from "@/components/Gate";
 import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -15,9 +16,10 @@ import Sheet from "@/components/Sheet";
 
 export default function ArticlePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { me, collegeName } = useApp();
+  const { me, collegeName, canAct } = useApp();
   const router = useRouter();
   const toast = useToast();
+  const gate = useGate();
   const supabase = supabaseBrowser();
   const [a, setA] = useState<Article | null | undefined>(undefined);
   const [loadError, setLoadError] = useState("");
@@ -55,6 +57,7 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
   const draft = a.status === "draft";
 
   async function toggleLike() {
+    if (!gate("like articles")) return;
     const cur = likes;
     setLikes({ n: cur.n + (cur.mine ? -1 : 1), mine: !cur.mine });
     const res = cur.mine
@@ -143,11 +146,11 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
       {!draft && (
         <section>
           <div className="sec-head"><h2>Comments</h2>{comments && comments.length > 0 && <small>{comments.length}</small>}</div>
-          <div className="inline" style={{ marginBottom: 12 }}>
+          {!canAct ? <p style={{ marginTop: 0 }}><a className="link-btn" href="/verify"><Icon name="lock" size={14} /> Verify to comment</a></p> : <div className="inline" style={{ marginBottom: 12 }}>
             <input value={text} maxLength={1000} placeholder="Add a comment" aria-label="Add a comment"
               onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
             <button onClick={send} disabled={busy || !text.trim()} aria-label="Send comment"><Icon name="send" size={16} /></button>
-          </div>
+          </div>}
           {comments === null ? <p className="meta">Loading comments...</p> : comments.length === 0 ? <p className="meta">No comments yet. Say what you thought.</p> : (
             <div className="feed">
               {comments.map((c) => (

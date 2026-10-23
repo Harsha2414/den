@@ -17,7 +17,8 @@
     "jsqr": "1.4.0",
     "livekit-client": "2.22.3",
     "livekit-server-sdk": "2.19.1",
-    "next": "15.5.27",
+    "next": "15.5.28",
+    "nodemailer": "10.0.16",
     "qrcode": "1.5.4",
     "react": "19.1.1",
     "react-dom": "19.1.1",
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@types/node": "22.18.0",
+    "@types/nodemailer": "8.0.2",
     "@types/qrcode": "1.5.6",
     "@types/react": "19.1.12",
     "@types/react-dom": "19.1.9",

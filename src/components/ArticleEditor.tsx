@@ -17,7 +17,7 @@ type Draft = { title: string; subtitle: string; body: string; topic: string; vis
 
 /** Write or edit an article. New articles are also kept in this browser until saved, so nothing is lost. */
 export default function ArticleEditor({ article }: { article?: Article }) {
-  const { me, collegeName } = useApp();
+  const { me, collegeName, canAct } = useApp();
   const router = useRouter();
   const toast = useToast();
   const supabase = supabaseBrowser();
@@ -93,6 +93,15 @@ export default function ArticleEditor({ article }: { article?: Article }) {
     toast(status === "published" ? (published ? "Changes published" : "Published") : "Draft saved");
     if (status === "published") router.push(`/articles/${id}`);
     else if (!article) router.replace(`/articles/${id}/edit`);
+  }
+
+  if (!canAct) {
+    return (
+      <main className="wrap page"><div className="empty" style={{ marginTop: 24 }}>
+        <Icon name="lock" size={26} />Only verified students can write articles.
+        <Link className="primary" href="/verify" style={{ width: "auto", padding: "0 22px" }}>Get verified</Link>
+      </div></main>
+    );
   }
 
   const words = plainText(d.body).split(" ").filter(Boolean).length;
