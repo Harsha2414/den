@@ -6,6 +6,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { useApp } from "./AppContext";
 import Icon, { VerifiedTick, type IconName } from "./Icon";
 import Avatar from "./Avatar";
+import ThemeToggle from "./ThemeToggle";
 
 /** Counts conversations with messages the student hasn't read yet, kept live. */
 function useUnread(userId: string) {
@@ -243,6 +244,7 @@ function SideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
         <div className="side-label">Create</div>{create.map(link)}
         <div className="side-label">Yours</div>{yours.map(link)}
         <div className="side-foot">
+          <ThemeToggle />
           {link({ href: "/me", label: "Settings", icon: "gear", on: path === "/me" })}
           {link({ href: "/guidelines", label: "Help & policies", icon: "help" })}
         </div>
