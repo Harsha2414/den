@@ -3,7 +3,7 @@
 export type FieldDef = {
   key: string;
   label: string;
-  type: "text" | "textarea" | "select" | "number" | "url" | "date" | "datetime-local";
+  type: "text" | "textarea" | "select" | "number" | "url" | "date" | "time" | "datetime-local";
   required?: boolean;
   placeholder?: string;
   options?: readonly string[];

@@ -7,6 +7,7 @@ import type { AnyItem, CampusEvent, Listing, Note, Placement, Post } from "@/lib
 import { useApp } from "./AppContext";
 import Icon, { VerifiedTick } from "./Icon";
 import Comments from "./Comments";
+import Avatar from "./Avatar";
 
 export interface CardActions {
   onLike?: () => void;
@@ -28,6 +29,14 @@ export default function ItemCard({ type, item, likes, liked, showCollege, action
   const a = item.author;
   const mine = item.author_id === me.id;
 
+  const menuBtn = mine ? (
+    confirm
+      ? <button className="ghost danger" onClick={() => { setConfirm(false); actions.onDelete(); }}>Tap again to delete</button>
+      : <button className="ghost" onClick={() => { setConfirm(true); setTimeout(() => setConfirm(false), 4000); }} aria-label="Delete"><Icon name={type === "posts" ? "more" : "trash"} size={type === "posts" ? 18 : 15} /></button>
+  ) : (
+    <button className="ghost" onClick={actions.onReport} aria-label="Report"><Icon name={type === "posts" ? "more" : "flag"} size={type === "posts" ? 18 : 15} /></button>
+  );
+
   const who = (
     <div className="who">
       <div>
@@ -37,22 +46,44 @@ export default function ItemCard({ type, item, likes, liked, showCollege, action
       </div>
       <div className="who-r">
         <span>{timeAgo(item.created_at)}</span>
-        {mine ? (
-          confirm
-            ? <button className="ghost danger" onClick={() => { setConfirm(false); actions.onDelete(); }}>Tap again to delete</button>
-            : <button className="ghost" onClick={() => { setConfirm(true); setTimeout(() => setConfirm(false), 4000); }} aria-label="Delete"><Icon name="trash" size={15} /></button>
-        ) : (
-          <button className="ghost" onClick={actions.onReport} aria-label="Report"><Icon name="flag" size={15} /></button>
-        )}
+        {menuBtn}
       </div>
     </div>
   );
 
-  let body: React.ReactNode = null;
+  // Posts: a light row with no box, like a timeline.
   if (type === "posts") {
     const p = item as Post;
-    body = <><span className="tag">{p.kind}</span>{p.visibility === "india" && <span className="tag wait">All India</span>}<div className="body">{p.body}</div></>;
-  } else if (type === "notes") {
+    return (
+      <article className="post">
+        <Link href={`/u/${item.author_id}`} aria-label={a?.name || "Student"}><Avatar id={item.author_id} name={a?.name} /></Link>
+        <div className="post-main">
+          <div className="post-meta">
+            <span className="post-who">
+              <Link href={`/u/${item.author_id}`}><b>{a?.name || "Student"}</b></Link>{a?.verified && <VerifiedTick />}
+              {[a?.branch, a?.year?.replace(" year", " yr"), showCollege ? collegeName(item.college_id) : "", timeAgo(item.created_at).replace(" ago", "")].filter(Boolean).map((x) => <span key={x}> · {x}</span>)}
+              {p.kind && p.kind !== "General" && <span className="post-kind"> · {p.kind}</span>}
+            </span>
+            {menuBtn}
+          </div>
+          <div className="body">{p.body}</div>
+          <div className="post-acts">
+            <button className={`ghost ${liked ? "on" : ""}`} onClick={actions.onLike} aria-pressed={liked} aria-label={`Like${likes ? `, ${likes}` : ""}`}>
+              <Icon name="heart" size={17} fill={liked} /> {likes || ""}
+            </button>
+            <button className="ghost" onClick={() => setOpen(!open)} aria-expanded={open} aria-label={`Comments${commentCount ? `, ${commentCount}` : ""}`}>
+              <Icon name="msg" size={17} /> {commentCount || ""}
+            </button>
+            {!showCollege && p.visibility === "india" && <span className="post-scope" title="Shared with every college"><Icon name="globe" size={13} /> All India</span>}
+          </div>
+          {open && <Comments postId={item.id} onCount={setCommentCount} />}
+        </div>
+      </article>
+    );
+  }
+
+  let body: React.ReactNode = null;
+  if (type === "notes") {
     const n = item as Note;
     body = <>
       <span className="tag">{n.kind}</span>
@@ -104,11 +135,6 @@ export default function ItemCard({ type, item, likes, liked, showCollege, action
             <Icon name="heart" size={16} fill={liked} /> {sec.likeLabel} {likes || ""}
           </button>
         )}
-        {type === "posts" && (
-          <button className="ghost" onClick={() => setOpen(!open)} aria-expanded={open}>
-            <Icon name="msg" size={16} /> Comments {commentCount || ""}
-          </button>
-        )}
         {type === "listings" && !mine && (
           <Link className="secondary" href={`/u/${item.author_id}`}><Icon name="chat" size={15} /> Message seller</Link>
         )}
@@ -116,7 +142,6 @@ export default function ItemCard({ type, item, likes, liked, showCollege, action
           <button className="secondary" onClick={actions.onToggleSold}>{(item as Listing).sold ? "Mark available" : "Mark sold"}</button>
         )}
       </div>
-      {type === "posts" && open && <Comments postId={item.id} onCount={setCommentCount} />}
     </article>
   );
 }

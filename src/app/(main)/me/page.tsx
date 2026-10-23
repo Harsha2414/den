@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { useApp } from "@/components/AppContext";
@@ -9,6 +10,7 @@ import Avatar from "@/components/Avatar";
 import Icon, { VerifiedTick } from "@/components/Icon";
 import Sheet from "@/components/Sheet";
 import PolicyLinks from "@/components/PolicyLinks";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function MePage() {
   const { me, colleges, collegeName } = useApp();
@@ -68,6 +70,15 @@ export default function MePage() {
         <button className="secondary" onClick={() => setEditing(true)}>Edit profile</button>
         <button className="secondary danger" onClick={signOut}><Icon name="logout" size={15} /> Sign out</button>
       </div>
+
+      <Link className="card" href="/events?tab=going" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", color: "inherit", marginBottom: 8 }}>
+        <Icon name="ticket" /><div style={{ flex: 1 }}><b>My events</b><div className="meta">Tickets, events you&rsquo;re going to, and ones you organise</div></div><span aria-hidden="true">›</span>
+      </Link>
+      <Link className="card" href="/articles?tab=mine" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", color: "inherit", marginBottom: 8 }}>
+        <Icon name="article" /><div style={{ flex: 1 }}><b>My articles</b><div className="meta">Your drafts and published articles</div></div><span aria-hidden="true">›</span>
+      </Link>
+
+      <div className="card" style={{ padding: "4px 4px", marginBottom: 8 }}><ThemeToggle /></div>
 
       <div className="sec-head"><h2>Blocked students</h2></div>
       {blocked.length === 0 ? <p className="meta">You haven't blocked anyone. Blocked students can't message you.</p> :

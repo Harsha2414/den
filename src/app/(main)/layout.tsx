@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/server";
 import { AppProvider } from "@/components/AppContext";
-import { BottomNav, TopBar } from "@/components/Chrome";
+import { ChromeShell } from "@/components/Chrome";
 import type { College, Profile } from "@/lib/types";
 import TermsGate from "@/components/TermsGate";
 
@@ -22,11 +22,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       {(profile as Profile).terms_accepted_at === null ? (
         <TermsGate userId={user.id} />
       ) : (
-        <>
-          <TopBar />
-          {children}
-          <BottomNav />
-        </>
+        <ChromeShell>{children}</ChromeShell>
       )}
     </AppProvider>
   );

@@ -46,6 +46,8 @@ export default function SpacesPage() {
   const [upcoming, setUpcoming] = useState<Space[]>([]);
   const [recent, setRecent] = useState<Space[]>([]);
   const [creating, setCreating] = useState(false);
+  // Opened from "Start a Space or debate" in the menu.
+  useEffect(() => { if (new URLSearchParams(window.location.search).get("new") === "1") setCreating(true); }, []);
 
   const load = useCallback(async () => {
     const sel = `*, host:profiles!spaces_host_id_fkey(${AUTHOR_COLS})`;

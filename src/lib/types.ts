@@ -22,7 +22,18 @@ export interface Post extends BaseItem { visibility: "college" | "india"; kind: 
 export interface Note extends BaseItem { title: string; subject: string; kind: string; semester: number; branch: string; link: string }
 export interface Placement extends BaseItem { company: string; role: string; ctc: string; result: string; rounds: string; tips: string }
 export interface Listing extends BaseItem { item: string; price: number; condition: string; contact: string; details: string; sold: boolean }
-export interface CampusEvent extends BaseItem { title: string; kind: string; event_date: string; venue: string; link: string; details: string }
+export interface CampusEvent extends BaseItem {
+  title: string; kind: string; event_date: string; venue: string; link: string; details: string;
+  start_time?: string | null; end_time?: string | null; capacity?: number | null; tickets?: boolean;
+  cancelled_at?: string | null; updated_at?: string | null;
+}
+export type RsvpStatus = "going" | "interested";
+export interface EventRsvp { event_id: string; user_id: string; status: RsvpStatus; created_at: string; profile?: Author | null }
+export interface EventUpdate { id: string; event_id: string; author_id: string; body: string; created_at: string; author?: Author | null }
+export interface Attendee {
+  user_id: string; name: string; branch: string; year: string; college_id: string; verified: boolean;
+  status: RsvpStatus; checked_in_at: string | null; created_at: string;
+}
 export type AnyItem = Post | Note | Placement | Listing | CampusEvent;
 
 export interface Comment { id: string; post_id: string; author_id: string; body: string; created_at: string; author?: Author | null }
@@ -69,3 +80,13 @@ export interface Conversation {
 }
 
 export interface Message { id: string; conversation_id: string; sender_id: string; body: string; created_at: string }
+
+export const ARTICLE_TOPICS = ["Campus life", "Careers", "Tech", "Exams & study", "Opinion", "Stories", "Clubs", "Other"] as const;
+export interface Article {
+  id: string; author_id: string; college_id: string;
+  visibility: "college" | "india"; topic: string;
+  title: string; subtitle: string; body: string;
+  status: "draft" | "published"; published_at: string | null; created_at: string; updated_at: string;
+  author?: Author | null;
+}
+export interface ArticleComment { id: string; article_id: string; author_id: string; body: string; created_at: string; author?: Author | null }
