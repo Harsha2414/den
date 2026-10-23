@@ -80,3 +80,13 @@ export interface Conversation {
 }
 
 export interface Message { id: string; conversation_id: string; sender_id: string; body: string; created_at: string }
+
+export const ARTICLE_TOPICS = ["Campus life", "Careers", "Tech", "Exams & study", "Opinion", "Stories", "Clubs", "Other"] as const;
+export interface Article {
+  id: string; author_id: string; college_id: string;
+  visibility: "college" | "india"; topic: string;
+  title: string; subtitle: string; body: string;
+  status: "draft" | "published"; published_at: string | null; created_at: string; updated_at: string;
+  author?: Author | null;
+}
+export interface ArticleComment { id: string; article_id: string; author_id: string; body: string; created_at: string; author?: Author | null }

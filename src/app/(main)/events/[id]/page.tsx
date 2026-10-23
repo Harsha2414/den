@@ -79,7 +79,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
 
   if (loadError) return <main className="wrap page"><div className="empty" style={{ marginTop: 20 }}>{loadError}<button className="secondary" onClick={load}>Try again</button></div></main>;
   if (ev === undefined) return <main className="wrap page"><div className="empty" style={{ marginTop: 20 }}>Loading...</div></main>;
-  if (ev === null) return <main className="wrap page"><div className="empty" style={{ marginTop: 20 }}>This event doesn&rsquo;t exist anymore.<Link className="secondary" href={`/c/${me.college_id}?tab=events`}>See events</Link></div></main>;
+  if (ev === null) return <main className="wrap page"><div className="empty" style={{ marginTop: 20 }}>This event doesn&rsquo;t exist anymore.<Link className="secondary" href="/events">See events</Link></div></main>;
 
   const creator = ev.author_id === me.id;
   const isOrg = creator || organisers.some((o) => o.user_id === me.id);
@@ -145,7 +145,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
     setBusy(false);
     if (error) return toast(friendlyError(error, "Couldn't delete the event."));
     toast("Event deleted");
-    router.replace(`/c/${ev!.college_id}?tab=events`);
+    router.replace("/events");
   }
 
   async function openGuests() {
@@ -201,7 +201,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
   return (
     <main className="wrap page">
       <div className="row" style={{ marginTop: 12, justifyContent: "space-between" }}>
-        <Link href={`/c/${ev.college_id}?tab=events`} className="ghost"><Icon name="back" size={16} /> Events</Link>
+        <Link href="/events" className="ghost"><Icon name="back" size={16} /> Events</Link>
         <div className="row" style={{ marginTop: 0 }}>
           <button className="ghost" onClick={share}><Icon name="send" size={15} /> Share</button>
           {!isOrg && <button className="ghost" onClick={() => setSheet("report")}><Icon name="flag" size={15} /> Report</button>}
