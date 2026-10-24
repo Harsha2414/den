@@ -9,11 +9,13 @@ import { ARTICLE_TOPICS, type Article } from "@/lib/types";
 import { useApp } from "./AppContext";
 import { useToast } from "./Toast";
 import Icon from "./Icon";
+import { MediaPicker } from "./Media";
+import { ACCEPT_ATTR, publicUrl, sizeLabel, upload, type Media } from "@/lib/media";
 
 const LOCAL_KEY = "den.articleDraft";
 const MIN_CHARS = 100;
 
-type Draft = { title: string; subtitle: string; body: string; topic: string; visibility: "india" | "college" };
+type Draft = { title: string; subtitle: string; body: string; topic: string; visibility: "india" | "college"; cover: Media[] };
 
 /** Write or edit an article. New articles are also kept in this browser until saved, so nothing is lost. */
 export default function ArticleEditor({ article }: { article?: Article }) {
@@ -23,8 +25,11 @@ export default function ArticleEditor({ article }: { article?: Article }) {
   const supabase = supabaseBrowser();
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const [d, setD] = useState<Draft>(() => article
-    ? { title: article.title, subtitle: article.subtitle, body: article.body, topic: article.topic, visibility: article.visibility }
-    : { title: "", subtitle: "", body: "", topic: ARTICLE_TOPICS[0], visibility: "india" });
+    ? { title: article.title, subtitle: article.subtitle, body: article.body, topic: article.topic, visibility: article.visibility, cover: article.cover || [] }
+    : { title: "", subtitle: "", body: "", topic: ARTICLE_TOPICS[0], visibility: "india", cover: [] });
+  const insertRef = useRef<HTMLInputElement>(null);
+  const [inserting, setInserting] = useState("");
+  const [coverBusy, setCoverBusy] = useState(false);
   const [view, setView] = useState<"write" | "preview">("write");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -49,7 +54,29 @@ export default function ArticleEditor({ article }: { article?: Article }) {
     return () => window.removeEventListener("beforeunload", warn);
   }, [d, dirty, article]);
 
-  const set = (k: keyof Draft, v: string) => { setD((x) => ({ ...x, [k]: v })); setDirty(true); };
+  const set = (k: keyof Draft, v: string | Media[]) => { setD((x) => ({ ...x, [k]: v })); setDirty(true); };
+
+  // Upload a photo, video or file and drop it into the text where the cursor is.
+  async function insertFiles(files: FileList | null) {
+    if (!files?.length) return;
+    for (const f of Array.from(files).slice(0, 6)) {
+      setInserting(f.name);
+      try {
+        const m = await upload(f, "media", me.id);
+        const url = publicUrl(m.path);
+        const caption = m.name.replace(/\.[^.]+$/, "").replace(/[\[\]]/g, "");
+        const snippet = m.kind === "image" ? `\n![${caption}](${url})\n` : m.kind === "video" ? `\n!video[${caption}](${url})\n` : `[📎 ${m.name.replace(/[\[\]]/g, "")} (${sizeLabel(m.size)})](${url})`;
+        const el = bodyRef.current;
+        const at = el ? el.selectionStart : d.body.length;
+        setD((x) => ({ ...x, body: x.body.slice(0, at) + snippet + x.body.slice(at) }));
+        setDirty(true);
+      } catch (e) {
+        toast((e as Error).message);
+      }
+    }
+    setInserting("");
+    if (insertRef.current) insertRef.current.value = "";
+  }
 
   // Wrap the selected text (or insert at the cursor) with formatting marks.
   function wrap(before: string, after = before, placeholder = "text") {
@@ -80,7 +107,8 @@ export default function ArticleEditor({ article }: { article?: Article }) {
     if (!d.title.trim()) return setErr("Give your article a title.");
     if (status === "published" && d.body.trim().length < MIN_CHARS) return setErr(`Write a little more before publishing (at least ${MIN_CHARS} characters).`);
     setBusy(true);
-    const row = { title: d.title.trim(), subtitle: d.subtitle.trim(), body: d.body, topic: d.topic, visibility: d.visibility, status };
+    if (inserting || coverBusy) return setErr("Wait for the upload to finish.");
+    const row = { title: d.title.trim(), subtitle: d.subtitle.trim(), body: d.body, topic: d.topic, visibility: d.visibility, status, cover: d.cover };
     const res = article
       ? await supabase.from("articles").update(row).eq("id", article.id).select("id").maybeSingle()
       : await supabase.from("articles").insert({ ...row, college_id: me.college_id }).select("id").single();
@@ -115,6 +143,8 @@ export default function ArticleEditor({ article }: { article?: Article }) {
 
       {err && <p className="err" role="alert" style={{ marginTop: 8 }}>{err}</p>}
 
+      <MediaPicker label="Cover photo (optional)" accept="images" max={1} value={d.cover} onChange={(m) => set("cover", m)} onBusy={setCoverBusy} compact />
+
       <input className="ed-title" value={d.title} maxLength={150} onChange={(e) => set("title", e.target.value)} placeholder="Title" aria-label="Title" />
       <input className="ed-sub" value={d.subtitle} maxLength={220} onChange={(e) => set("subtitle", e.target.value)} placeholder="A one-line summary (optional)" aria-label="Summary" />
 
@@ -145,12 +175,17 @@ export default function ArticleEditor({ article }: { article?: Article }) {
             <button onClick={() => linePrefix("- ")} aria-label="Bullet list">•</button>
             <button onClick={() => linePrefix("> ")} aria-label="Quote">&ldquo;</button>
             <button onClick={addLink} aria-label="Add link"><Icon name="link" size={16} /></button>
+            <button onClick={() => insertRef.current?.click()} aria-label="Add photo, video or file" className="wide" disabled={!!inserting}>
+              <Icon name="clip" size={16} /> {inserting ? "Uploading..." : "Photo, video, file"}
+            </button>
+            <input ref={insertRef} type="file" hidden multiple accept={ACCEPT_ATTR.any} onChange={(e) => insertFiles(e.target.files)} />
           </div>
           <textarea ref={bodyRef} className="ed-body" value={d.body} maxLength={40000} onChange={(e) => set("body", e.target.value)}
             placeholder={"Tell your story...\n\nTip: start a line with ## for a heading, - for a list, > for a quote. Wrap words in **double stars** for bold."} aria-label="Article text" />
         </>
       ) : (
         <article className="reader preview">
+          {!!d.cover.length && <img className="reader-cover" src={publicUrl(d.cover[0].path)} alt="" />}
           <h1>{d.title || "Untitled"}</h1>
           {d.subtitle && <p className="reader-sub">{d.subtitle}</p>}
           {d.body.trim() ? <Markdown text={d.body} /> : <p className="meta">Nothing to preview yet.</p>}

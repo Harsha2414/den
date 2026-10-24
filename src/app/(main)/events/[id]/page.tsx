@@ -16,6 +16,7 @@ import Composer from "@/components/Composer";
 import PeoplePicker from "@/components/PeoplePicker";
 import ReportSheet from "@/components/ReportSheet";
 import Sheet from "@/components/Sheet";
+import { MediaView } from "@/components/Media";
 
 type Organiser = { user_id: string; profile: Author | null };
 
@@ -211,6 +212,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
         </div>
       </div>
 
+      {!!ev.media?.length && <MediaView items={ev.media} className="ev-hero" />}
       <div style={{ marginTop: 8 }}>
         {ev.cancelled_at && <span className="tag no">Cancelled</span>}
         {past && !ev.cancelled_at && <span className="tag">Over</span>}

@@ -13,6 +13,7 @@ import Avatar from "@/components/Avatar";
 import Icon, { VerifiedTick } from "@/components/Icon";
 import ReportSheet from "@/components/ReportSheet";
 import Sheet from "@/components/Sheet";
+import { publicUrl } from "@/lib/media";
 
 export default function ArticlePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -117,6 +118,7 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
       )}
 
       <article className="reader">
+        {!!a.cover?.length && <img className="reader-cover" src={publicUrl(a.cover[0].path)} alt="" />}
         <div className="reader-topic">{a.topic}{a.visibility === "college" ? ` · ${collegeName(a.college_id)} only` : ""}</div>
         <h1>{a.title}</h1>
         {a.subtitle && <p className="reader-sub">{a.subtitle}</p>}

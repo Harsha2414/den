@@ -1,5 +1,7 @@
 import type { FieldDef } from "@/components/Field";
 
+const media = (v: Record<string, string>, key = "media") => { try { const j = JSON.parse(v[key] || "[]"); return Array.isArray(j) ? j : []; } catch { return []; } };
+
 export type SectionKey = "posts" | "notes" | "placements" | "listings" | "events";
 export type LikeType = "post" | "note" | "placement" | "event";
 
@@ -24,11 +26,16 @@ export const SECTIONS: Record<SectionKey, Section> = {
     key: "posts", label: "Feed", cta: "Write a post", likeType: "post", likeLabel: "Like",
     empty: "No posts here yet. Ask a doubt or share campus news to start the conversation.",
     fields: [
-      { key: "body", label: "What's on your mind?", type: "textarea", required: true, placeholder: "Ask a doubt, share news, find a lost ID card...", max: 3000 },
+      { key: "body", label: "What's on your mind?", type: "textarea", placeholder: "Ask a doubt, share news, find a lost ID card...", max: 3000 },
+      { key: "media", label: "Photos (up to 4)", type: "media", accept: "images", maxItems: 4 },
       { key: "kind", label: "Type", type: "select", options: ["General", "Doubt", "Announcement", "Lost & found", "Hostel life"] },
       { key: "visibility", label: "Who can see it", type: "select", options: VIS, hint: "My college: only students of your college. All India: every student on Den." },
     ],
-    toRow: (v) => ({ body: v.body, kind: v.kind, visibility: v.visibility === "All India" ? "india" : "college" }),
+    toRow: (v) => {
+      const m = media(v);
+      if (!v.body && !m.length) return "Write something or add a photo.";
+      return { body: v.body, kind: v.kind, visibility: v.visibility === "All India" ? "india" : "college", media: m };
+    },
   },
   notes: {
     key: "notes", label: "Notes", cta: "Share notes", likeType: "note", likeLabel: "Helpful",
@@ -39,11 +46,14 @@ export const SECTIONS: Record<SectionKey, Section> = {
       { key: "kind", label: "Type", type: "select", options: ["Notes", "PYQ", "Lab manual", "Assignment", "Book / PDF"] },
       { key: "semester", label: "Semester", type: "select", options: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"] },
       { key: "branch", label: "Branch", type: "text", placeholder: "CSE, ECE, BCom...", max: 60 },
-      { key: "link", label: "Link (Google Drive etc.)", type: "url", placeholder: "https://", hint: "Make sure the link is set so anyone with it can view." },
+      { key: "media", label: "Upload files (PDF, Word, PPT)", type: "media", accept: "docs", maxItems: 3 },
+      { key: "link", label: "Or a link (Google Drive etc.)", type: "url", placeholder: "https://", hint: "Make sure the link is set so anyone with it can view." },
     ],
     toRow: (v) => {
       if (v.link && !/^https?:\/\//i.test(v.link)) return "Links must start with https://";
-      return { title: v.title, subject: v.subject, kind: v.kind, semester: parseInt(v.semester, 10), branch: v.branch, link: v.link };
+      const m = media(v);
+      if (!m.length && !v.link) return "Upload a file or add a link to your notes.";
+      return { title: v.title, subject: v.subject, kind: v.kind, semester: parseInt(v.semester, 10), branch: v.branch, link: v.link, media: m };
     },
   },
   placements: {
@@ -68,11 +78,12 @@ export const SECTIONS: Record<SectionKey, Section> = {
       { key: "condition", label: "Condition", type: "select", options: ["Like new", "Good", "Used"] },
       { key: "contact", label: "Where to meet or how to reach you", type: "text", required: true, placeholder: "Hostel B, room 214, or message me here", max: 120, hint: "Avoid posting your phone number publicly. Buyers can message you on Den." },
       { key: "details", label: "Details", type: "textarea", max: 1000 },
+      { key: "media", label: "Photos (up to 6)", type: "media", accept: "images", maxItems: 6 },
     ],
     toRow: (v) => {
       const price = parseInt(v.price, 10);
       if (!Number.isFinite(price) || price < 0) return "Enter a price in rupees.";
-      return { item: v.item, price, condition: v.condition, contact: v.contact, details: v.details };
+      return { item: v.item, price, condition: v.condition, contact: v.contact, details: v.details, media: media(v) };
     },
   },
   events: {
@@ -80,6 +91,7 @@ export const SECTIONS: Record<SectionKey, Section> = {
     empty: "No upcoming events. Create your club's next fest, workshop or hackathon.",
     fields: [
       { key: "title", label: "Event name", type: "text", required: true, max: 120 },
+      { key: "media", label: "Banner or poster", type: "media", accept: "images", maxItems: 1 },
       { key: "kind", label: "Type", type: "select", options: EVENT_KINDS },
       { key: "event_date", label: "Date", type: "date", required: true },
       { key: "start_time", label: "Starts at", type: "time" },
@@ -101,7 +113,7 @@ export const SECTIONS: Record<SectionKey, Section> = {
       if (v.end_time && !v.start_time) return "Add a start time too.";
       return {
         title: v.title, kind: v.kind, event_date: v.event_date, venue: v.venue, link: v.link, details: v.details,
-        start_time: v.start_time || null, end_time: v.end_time || null, capacity, tickets: v.tickets === TICKET_OPTIONS[1],
+        start_time: v.start_time || null, end_time: v.end_time || null, capacity, tickets: v.tickets === TICKET_OPTIONS[1], media: media(v),
       };
     },
   },

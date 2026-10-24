@@ -4,6 +4,7 @@ import type { CampusEvent, RsvpStatus } from "@/lib/types";
 import { isPast, timeLabel } from "@/lib/events";
 import { useApp } from "./AppContext";
 import Icon from "./Icon";
+import { publicUrl } from "@/lib/media";
 
 /** A tappable event in a list: date stub, title, time and place, how many are going, and your RSVP. */
 export default function EventCard({ ev, going, mine, showCollege, organiser }: {
@@ -14,7 +15,8 @@ export default function EventCard({ ev, going, mine, showCollege, organiser }: {
   const past = isPast(ev);
   const full = !!ev.capacity && going >= ev.capacity;
   return (
-    <Link href={`/events/${ev.id}`} className={`card ev-card ${ev.cancelled_at || past ? "dim" : ""}`}>
+    <Link href={`/events/${ev.id}`} className={`card ev-card ${ev.cancelled_at || past ? "dim" : ""} ${ev.media?.length ? "has-banner" : ""}`}>
+      {!!ev.media?.length && <img className="ev-banner" src={publicUrl(ev.media[0].path)} alt="" loading="lazy" />}
       <div className="ev">
         <div className="stub"><b>{d.getDate()}</b><span>{d.toLocaleString("en-IN", { month: "short" })}</span></div>
         <div>

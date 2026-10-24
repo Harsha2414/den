@@ -3,7 +3,10 @@
 export type FieldDef = {
   key: string;
   label: string;
-  type: "text" | "textarea" | "select" | "number" | "url" | "date" | "time" | "datetime-local";
+  type: "text" | "textarea" | "select" | "number" | "url" | "date" | "time" | "datetime-local" | "media";
+  /** For type "media": what can be added and how many. */
+  accept?: "images" | "media" | "docs" | "any";
+  maxItems?: number;
   required?: boolean;
   placeholder?: string;
   options?: readonly string[];

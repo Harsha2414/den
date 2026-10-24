@@ -31,6 +31,7 @@ export function eventToValues(ev: CampusEvent): Record<string, string> {
     start_time: (ev.start_time || "").slice(0, 5), end_time: (ev.end_time || "").slice(0, 5),
     venue: ev.venue || "", tickets: ev.tickets ? TICKET_OPTIONS[1] : TICKET_OPTIONS[0],
     capacity: ev.capacity ? String(ev.capacity) : "", link: ev.link || "", details: ev.details || "",
+    media: JSON.stringify(ev.media || []),
   };
 }
 

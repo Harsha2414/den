@@ -8,6 +8,7 @@ import { useApp } from "./AppContext";
 import Icon, { VerifiedTick } from "./Icon";
 import Comments from "./Comments";
 import Avatar from "./Avatar";
+import { MediaView } from "./Media";
 
 export interface CardActions {
   onLike?: () => void;
@@ -66,7 +67,8 @@ export default function ItemCard({ type, item, likes, liked, showCollege, action
             </span>
             {menuBtn}
           </div>
-          <div className="body">{p.body}</div>
+          {p.body && <div className="body">{p.body}</div>}
+          {!!p.media?.length && <MediaView items={p.media} className="post-media" />}
           <div className="post-acts">
             <button className={`ghost ${liked ? "on" : ""}`} onClick={actions.onLike} aria-pressed={liked} aria-label={`Like${likes ? `, ${likes}` : ""}`}>
               <Icon name="heart" size={17} fill={liked} /> {likes || ""}
@@ -89,6 +91,7 @@ export default function ItemCard({ type, item, likes, liked, showCollege, action
       <span className="tag">{n.kind}</span>
       <div className="title">{n.title}</div>
       <div className="meta">{n.subject}, semester {n.semester}{n.branch ? `, ${n.branch}` : ""}</div>
+      {!!n.media?.length && <MediaView items={n.media} />}
       {isUrl(n.link) && <a className="link-btn" href={n.link} target="_blank" rel="noopener noreferrer nofollow"><Icon name="link" size={15} /> Open notes</a>}
     </>;
   } else if (type === "placements") {
@@ -107,6 +110,7 @@ export default function ItemCard({ type, item, likes, liked, showCollege, action
       <span className="tag">{l.condition}</span>{l.sold && <span className="tag no">Sold</span>}
       <div className="title">{l.item}</div>
       <div className="price">{rupees(l.price)}</div>
+      {!!l.media?.length && <MediaView items={l.media} />}
       {l.details && <div className="body">{l.details}</div>}
       <div className="meta">Contact: {l.contact}</div>
     </div>;

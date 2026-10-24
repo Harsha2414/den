@@ -4,8 +4,11 @@ import { Fragment, type ReactNode } from "react";
  * A small, safe formatter for articles. Supports:
  *   ## Heading, ### Small heading, > quote, - bullet, 1. numbered, --- divider,
  *   **bold**, *italic*, `code`, [text](https://link)
+ *   ![caption](photo link) and !video[caption](video link) on their own line, only for files uploaded to Den
  * It builds React elements directly, so no HTML from the writer ever reaches the page.
  */
+const OWN = () => `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/`;
+const MEDIA_LINE = /^(!video|!)\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)$/;
 
 const INLINE = /(\*\*([^*]+)\*\*)|(\*([^*\s][^*]*)\*)|(`([^`]+)`)|(\[([^\]]+)\]\((https?:\/\/[^\s)]+)\))/g;
 
@@ -43,6 +46,16 @@ export function Markdown({ text }: { text: string }) {
     const key = `b${b++}`;
     if (!t) { i++; continue; }
     if (/^---+$/.test(t)) { blocks.push(<hr key={key} />); i++; continue; }
+    const mm = t.match(MEDIA_LINE);
+    if (mm && mm[3].startsWith(OWN())) {
+      blocks.push(
+        <figure key={key}>
+          {mm[1] === "!video" ? <video src={mm[3]} controls playsInline preload="metadata" /> : <img src={mm[3]} alt={mm[2]} loading="lazy" />}
+          {mm[2] && mm[1] !== "!video" && <figcaption>{mm[2]}</figcaption>}
+        </figure>,
+      );
+      i++; continue;
+    }
     const h = t.match(/^(#{1,3})\s+(.*)$/);
     if (h) {
       blocks.push(h[1].length <= 2 ? <h2 key={key}>{inline(h[2], key)}</h2> : <h3 key={key}>{inline(h[2], key)}</h3>);
@@ -67,7 +80,7 @@ export function Markdown({ text }: { text: string }) {
       continue;
     }
     const para: string[] = [];
-    while (i < src.length && src[i].trim() && !/^(#{1,3}\s|>|[-*]\s|\d+[.)]\s|---+$)/.test(src[i].trim())) { para.push(src[i].trim()); i++; }
+    while (i < src.length && src[i].trim() && !/^(#{1,3}\s|>|[-*]\s|\d+[.)]\s|---+$|!video\[|!\[)/.test(src[i].trim())) { para.push(src[i].trim()); i++; }
     if (!para.length) { para.push(t); i++; }
     blocks.push(<p key={key}>{lines(para, key)}</p>);
   }
@@ -77,6 +90,7 @@ export function Markdown({ text }: { text: string }) {
 /** Plain text for previews: drops the formatting marks. */
 export function plainText(md: string): string {
   return md
+    .replace(/!(video)?\[[^\]]*\]\([^)]+\)/g, "")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/[*`>#_]|^\s*[-]\s+|^\s*\d+[.)]\s+/gm, "")
     .replace(/\s+/g, " ")

@@ -9,6 +9,7 @@ import { ARTICLE_TOPICS, type Article } from "@/lib/types";
 import { useApp } from "@/components/AppContext";
 import Avatar from "@/components/Avatar";
 import Icon, { VerifiedTick } from "@/components/Icon";
+import { publicUrl } from "@/lib/media";
 
 type Tab = "india" | "college" | "mine";
 const TABS: Record<Tab, string> = { india: "All India", college: "My college", mine: "Mine" };
@@ -25,7 +26,7 @@ export default function ArticlesPage() {
 
   const load = useCallback(async () => {
     setError(""); setList(null);
-    let q = supabase.from("articles").select(`id,author_id,college_id,visibility,topic,title,subtitle,body,status,published_at,created_at,updated_at, author:profiles!articles_author_id_fkey(${AUTHOR_COLS})`);
+    let q = supabase.from("articles").select(`id,author_id,college_id,visibility,topic,title,subtitle,body,status,published_at,created_at,updated_at,cover, author:profiles!articles_author_id_fkey(${AUTHOR_COLS})`);
     if (tab === "mine") q = q.eq("author_id", me.id).order("updated_at", { ascending: false });
     else {
       q = q.eq("status", "published").order("published_at", { ascending: false });
@@ -76,7 +77,8 @@ export default function ArticlesPage() {
       ) : (
         <div className="feed">
           {list.map((a) => (
-            <Link key={a.id} href={a.status === "draft" ? `/articles/${a.id}/edit` : `/articles/${a.id}`} className="art-row">
+            <Link key={a.id} href={a.status === "draft" ? `/articles/${a.id}/edit` : `/articles/${a.id}`} className={`art-row ${a.cover?.length ? "has-cover" : ""}`}>
+              {!!a.cover?.length && <img className="art-thumb" src={publicUrl(a.cover[0].path)} alt="" loading="lazy" />}
               <div className="art-top">
                 {a.status === "draft" && <span className="tag wait">Draft</span>}
                 <span>{a.topic}</span><span>· {readMinutes(a.body)} min read</span>
