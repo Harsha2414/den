@@ -36,3 +36,9 @@ export function friendlyError(e: { message?: string; code?: string } | null | un
   if (m && m.length < 140 && !/[{}]/.test(m)) return m;
   return fallback;
 }
+
+/** A same-site path to go to after sign-in ("/c/abc", "/events/1"). Anything else becomes "/". */
+export function safeNext(v: string | null | undefined): string {
+  if (!v) return "/";
+  return /^\/(?![\/\\])[^\s]*$/.test(v) && !v.startsWith("/login") && !v.startsWith("/auth") ? v : "/";
+}
