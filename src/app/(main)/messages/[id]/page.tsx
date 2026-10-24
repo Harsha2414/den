@@ -61,6 +61,10 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
   const inputRef = useRef<HTMLInputElement>(null);
   const idsRef = useRef<Set<string>>(new Set());
   idsRef.current = new Set(msgs.map((m) => m.id));
+  const latestRef = useRef<string | null>(null);
+  const loadedRef = useRef(false);
+  loadedRef.current = loaded;
+  latestRef.current = msgs.length ? msgs[msgs.length - 1].created_at : null;
 
   const markRead = useCallback(() => {
     supabase.from("conversation_members").update({ last_read_at: new Date().toISOString() })
@@ -89,17 +93,47 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
         markRead();
       });
 
-    const ch = supabase.channel("chat-" + id)
+    const addNew = (rows: Message[]) => {
+      if (!rows.length) return;
+      setMsgs((m) => {
+        const have = new Set(m.map((x) => x.id));
+        const fresh = rows.filter((r) => !have.has(r.id));
+        return fresh.length ? [...m, ...fresh].sort((a, b) => a.created_at.localeCompare(b.created_at)) : m;
+      });
+      if (document.visibilityState === "visible") markRead();
+    };
+
+    // Safety net: fetch anything newer than what's on screen (after reconnecting, coming back to the tab, or by polling).
+    const catchUp = async () => {
+      if (!loadedRef.current) return;
+      const since = latestRef.current;
+      let q = supabase.from("messages").select("*").eq("conversation_id", id).order("created_at", { ascending: true }).limit(100);
+      if (since) q = q.gt("created_at", since);
+      const { data } = await q;
+      addNew((data || []) as Message[]);
+    };
+
+    // 1. Messages and members: its own connection, so nothing else can break it.
+    let poll: ReturnType<typeof setInterval> | null = null;
+    const startPolling = () => { if (!poll) poll = setInterval(catchUp, 4000); };
+    const stopPolling = () => { if (poll) { clearInterval(poll); poll = null; } };
+    const msgCh = supabase.channel("chat-msgs-" + id)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${id}` },
         (payload: { new: Message }) => {
-          setMsgs((m) => (m.some((x) => x.id === payload.new.id) ? m : [...m, payload.new]));
+          addNew([payload.new]);
           setTyping((t) => { const n = { ...t }; delete n[payload.new.sender_id]; return n; });
-          if (document.visibilityState === "visible") markRead();
         })
+      .on("postgres_changes", { event: "*", schema: "public", table: "conversation_members", filter: `conversation_id=eq.${id}` }, () => loadConv())
+      .subscribe((status: string) => {
+        if (status === "SUBSCRIBED") { stopPolling(); catchUp(); }
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") startPolling();
+      });
+
+    // 2. Deleted messages and reactions: a separate connection (reactions need migration 0007).
+    const extraCh = supabase.channel("chat-extra-" + id)
       // Delete events can't be filtered by chat; ignore ones that aren't on screen.
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "messages" },
         (payload: { old: { id: string } }) => { if (idsRef.current.has(payload.old.id)) setMsgs((m) => m.filter((x) => x.id !== payload.old.id)); })
-      .on("postgres_changes", { event: "*", schema: "public", table: "conversation_members", filter: `conversation_id=eq.${id}` }, () => loadConv())
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "message_reactions" }, (payload: { new: Reaction }) => {
         if (!idsRef.current.has(payload.new.message_id)) return;
         setReactions((rs) => rs.some((r) => r.message_id === payload.new.message_id && r.user_id === payload.new.user_id && r.emoji === payload.new.emoji) ? rs : [...rs, payload.new]);
@@ -107,13 +141,27 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "message_reactions" }, (payload: { old: Reaction }) => {
         setReactions((rs) => rs.filter((r) => !(r.message_id === payload.old.message_id && r.user_id === payload.old.user_id && r.emoji === payload.old.emoji)));
       })
+      .subscribe();
+
+    // 3. Typing: a live broadcast, not stored anywhere.
+    const typeCh = supabase.channel("chat-typing-" + id)
       .on("broadcast", { event: "typing" }, ({ payload }: { payload: { user: string; stop?: boolean } }) => {
         if (payload.user === me.id) return;
         setTyping((t) => { const n = { ...t }; if (payload.stop) delete n[payload.user]; else n[payload.user] = Date.now(); return n; });
       })
       .subscribe();
-    channel.current = ch;
-    return () => { supabase.removeChannel(ch); channel.current = null; };
+    channel.current = typeCh;
+
+    const onBack = () => { if (document.visibilityState === "visible") catchUp(); };
+    document.addEventListener("visibilitychange", onBack);
+    window.addEventListener("online", catchUp);
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", onBack);
+      window.removeEventListener("online", catchUp);
+      supabase.removeChannel(msgCh); supabase.removeChannel(extraCh); supabase.removeChannel(typeCh);
+      channel.current = null;
+    };
   }, [supabase, id, me.id, loadConv, markRead, loadReactions]);
 
   // "typing…" disappears after 4 seconds without a new keystroke.
