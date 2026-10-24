@@ -1,4 +1,5 @@
 "use client";
+import { useGate } from "@/components/Gate";
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -13,6 +14,7 @@ import ReportSheet from "@/components/ReportSheet";
 export default function UserPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { me, collegeName } = useApp();
+  const gate = useGate();
   const router = useRouter();
   const toast = useToast();
   const supabase = supabaseBrowser();
@@ -31,6 +33,7 @@ export default function UserPage({ params }: { params: Promise<{ id: string }> }
   }, [id, me.id, router, supabase]);
 
   async function message() {
+    if (!gate("message students")) return;
     setBusy(true);
     const { data, error } = await supabase.rpc("start_dm", { other: id });
     setBusy(false);

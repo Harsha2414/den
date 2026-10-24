@@ -1,4 +1,5 @@
 "use client";
+import { useGate } from "@/components/Gate";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -15,6 +16,7 @@ import PeoplePicker from "@/components/PeoplePicker";
 
 export default function MessagesPage() {
   const { me } = useApp();
+  const gate = useGate();
   const router = useRouter();
   const toast = useToast();
   const supabase = supabaseBrowser();
@@ -38,6 +40,7 @@ export default function MessagesPage() {
   }, [load, supabase, me.id]);
 
   async function openDm(p: Author) {
+    if (!gate("message students")) return;
     setBusy(true);
     const { data, error } = await supabase.rpc("start_dm", { other: p.id });
     setBusy(false);
@@ -46,6 +49,7 @@ export default function MessagesPage() {
   }
 
   async function createGroup() {
+    if (!gate("create group chats")) return;
     if (!groupName.trim()) return toast("Give the group a name.");
     if (picked.size === 0) return toast("Add at least one person.");
     setBusy(true);

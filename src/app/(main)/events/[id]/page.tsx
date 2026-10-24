@@ -1,4 +1,5 @@
 "use client";
+import { useGate } from "@/components/Gate";
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -15,6 +16,7 @@ import Composer from "@/components/Composer";
 import PeoplePicker from "@/components/PeoplePicker";
 import ReportSheet from "@/components/ReportSheet";
 import Sheet from "@/components/Sheet";
+import { MediaView } from "@/components/Media";
 
 type Organiser = { user_id: string; profile: Author | null };
 
@@ -32,6 +34,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
   const { me, collegeName } = useApp();
   const router = useRouter();
   const toast = useToast();
+  const gate = useGate();
   const supabase = supabaseBrowser();
 
   const [ev, setEv] = useState<CampusEvent | null | undefined>(undefined);
@@ -90,6 +93,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
   const pageUrl = typeof window !== "undefined" ? `${window.location.origin}/events/${ev.id}` : "";
 
   async function rsvp(choice: RsvpStatus) {
+    if (!gate("RSVP to events")) return;
     setBusy(true);
     const { error } = await supabase.rpc("rsvp_event", { ev: id, choice });
     setBusy(false);
@@ -208,6 +212,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
         </div>
       </div>
 
+      {!!ev.media?.length && <MediaView items={ev.media} className="ev-hero" />}
       <div style={{ marginTop: 8 }}>
         {ev.cancelled_at && <span className="tag no">Cancelled</span>}
         {past && !ev.cancelled_at && <span className="tag">Over</span>}

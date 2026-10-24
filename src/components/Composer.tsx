@@ -7,6 +7,8 @@ import { useApp } from "./AppContext";
 import { useToast } from "./Toast";
 import Field from "./Field";
 import Sheet from "./Sheet";
+import { MediaPicker } from "./Media";
+import { parseMedia } from "@/lib/media";
 
 export default function Composer({ section, defaultIndia, onClose, onPosted, editId, initial }: {
   section: SectionKey; defaultIndia: boolean; onClose: () => void;
@@ -24,10 +26,12 @@ export default function Composer({ section, defaultIndia, onClose, onPosted, edi
     initial?.[f.key] ?? (f.key === "visibility" ? (defaultIndia ? "All India" : "My college") : f.initial ?? (f.type === "select" ? f.options![0] : "")),
   ])));
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (uploading) return setErr("Wait for the upload to finish.");
     const v = Object.fromEntries(Object.entries(values).map(([k, x]) => [k, x.trim()]));
     const missing = sec.fields.find((f) => f.required && !v[f.key]);
     if (missing) return setErr(`Add "${missing.label}" to continue.`);
@@ -50,10 +54,13 @@ export default function Composer({ section, defaultIndia, onClose, onPosted, edi
       {!editId && <p className="note">Posting to {collegeName(me.college_id)}.</p>}
       <form className="form" onSubmit={submit}>
         {err && <p className="err" role="alert">{err}</p>}
-        {sec.fields.map((f) => (
+        {sec.fields.map((f) => f.type === "media" ? (
+          <MediaPicker key={f.key} label={f.label} accept={f.accept} max={f.maxItems} value={parseMedia(values[f.key])} onBusy={setUploading}
+            onChange={(m) => setValues((s) => ({ ...s, [f.key]: JSON.stringify(m) }))} />
+        ) : (
           <Field key={f.key} id={`c-${section}-${f.key}`} f={f} value={values[f.key]} onChange={(x) => setValues((s) => ({ ...s, [f.key]: x }))} />
         ))}
-        <button className="primary" disabled={busy}>{busy ? (editId ? "Saving..." : "Posting...") : editId ? "Save changes" : section === "events" ? "Create event" : "Post"}</button>
+        <button className="primary" disabled={busy || uploading}>{busy ? (editId ? "Saving..." : "Posting...") : editId ? "Save changes" : section === "events" ? "Create event" : "Post"}</button>
       </form>
     </Sheet>
   );

@@ -1,4 +1,5 @@
 "use client";
+import { useGate, VerifyBanner, VouchInbox } from "./Gate";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,6 +24,7 @@ const TITLES: Record<SectionKey, string> = { posts: "Feed", notes: "Notes & PYQs
 export default function ScopeHome({ scope, initialTab, startComposing }: { scope: string; initialTab?: string; startComposing?: boolean }) {
   const { me, college } = useApp();
   const toast = useToast();
+  const gate = useGate();
   const router = useRouter();
   const supabase = supabaseBrowser();
   const india = scope === "india";
@@ -36,7 +38,8 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
   const [likeMap, setLikeMap] = useState<Record<string, { n: number; mine: boolean }>>({});
   const [liveSpaces, setLiveSpaces] = useState<Space[]>([]);
   const [query, setQuery] = useState("");
-  const [composing, setComposing] = useState(!!startComposing && (scope === me.college_id || scope === "india"));
+  const { canAct } = useApp();
+  const [composing, setComposing] = useState(!!startComposing && canAct && (scope === me.college_id || scope === "india"));
   const [reporting, setReporting] = useState<string | null>(null);
   const [error, setError] = useState("");
 
@@ -108,6 +111,7 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
   }, [items, query]);
 
   async function toggleLike(item: AnyItem) {
+    if (!gate("like posts")) return;
     const likeType = LIKE_TYPE_OF[tab]; if (!likeType) return;
     const cur = likeMap[item.id] || { n: 0, mine: false };
     setLikeMap({ ...likeMap, [item.id]: { n: cur.n + (cur.mine ? -1 : 1), mine: !cur.mine } });
@@ -136,6 +140,7 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
 
   return (
     <main className={`wrap page ${tab === "posts" ? "feed-page" : ""}`}>
+      {tab === "posts" && <><VerifyBanner /><VouchInbox /></>}
       {tab !== "posts" && (
         <div className="page-head">
           <h1>{TITLES[tab]}</h1>
@@ -179,7 +184,7 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
         shown.length === 0 ? (
           <div className="empty">
             {query ? "Nothing matches that search." : sec.empty}
-            {!query && canPostHere && <button className="secondary" onClick={() => setComposing(true)}>{sec.cta}</button>}
+            {!query && canPostHere && <button className="secondary" onClick={() => { if (gate("post")) setComposing(true); }}>{sec.cta}</button>}
           </div>
         ) : (
           <div className={tab === "posts" ? "feed" : "list"}>
@@ -199,7 +204,7 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
           </div>
         )}
 
-      {canPostHere && <button className="fab" onClick={() => setComposing(true)} aria-label={sec.cta}><Icon name="plus" size={24} /><span>{sec.cta}</span></button>}
+      {canPostHere && <button className="fab" onClick={() => { if (gate("post")) setComposing(true); }} aria-label={sec.cta}><Icon name="plus" size={24} /><span>{sec.cta}</span></button>}
       {composing && <Composer section={tab} defaultIndia={india} onClose={closeComposer} onPosted={(id) => { setComposing(false); if (tab === "events" && id) router.push(`/events/${id}`); else { if (startComposing) closeComposer(); load(); } }} />}
       {reporting && <ReportSheet targetType={REPORT_TYPE_OF[tab]} targetId={reporting} onClose={() => setReporting(null)} />}
     </main>

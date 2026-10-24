@@ -1,4 +1,5 @@
 "use client";
+import { useGate } from "@/components/Gate";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -37,7 +38,8 @@ function SpaceRow({ s }: { s: Space }) {
 }
 
 export default function SpacesPage() {
-  const { me } = useApp();
+  const { me, canAct } = useApp();
+  const gate = useGate();
   const router = useRouter();
   const toast = useToast();
   const supabase = supabaseBrowser();
@@ -47,7 +49,7 @@ export default function SpacesPage() {
   const [recent, setRecent] = useState<Space[]>([]);
   const [creating, setCreating] = useState(false);
   // Opened from "Start a Space or debate" in the menu.
-  useEffect(() => { if (new URLSearchParams(window.location.search).get("new") === "1") setCreating(true); }, []);
+  useEffect(() => { if (new URLSearchParams(window.location.search).get("new") === "1" && canAct) setCreating(true); }, [canAct]);
 
   const load = useCallback(async () => {
     const sel = `*, host:profiles!spaces_host_id_fkey(${AUTHOR_COLS})`;
@@ -103,7 +105,7 @@ export default function SpacesPage() {
         <div className="list">{recent.map((s) => <SpaceRow key={s.id} s={s} />)}</div>
       </>}
 
-      <button className="fab" onClick={() => setCreating(true)}><Icon name="plus" /> Start a Space</button>
+      <button className="fab" onClick={() => { if (gate("host Spaces")) setCreating(true); }}><Icon name="plus" /> Start a Space</button>
       {creating && <CreateSpace meCollege={me.college_id} onClose={() => setCreating(false)}
         onCreated={(id, live) => router.push(live ? `/spaces/${id}?join=1` : `/spaces/${id}`)} onError={(m) => toast(m)} />}
     </main>

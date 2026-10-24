@@ -13,10 +13,12 @@ import Icon from "@/components/Icon";
 import Sheet from "@/components/Sheet";
 import PeoplePicker from "@/components/PeoplePicker";
 import ReportSheet from "@/components/ReportSheet";
+import { MediaPicker, MediaView } from "@/components/Media";
+import type { Media } from "@/lib/media";
 
 export default function ChatPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { me } = useApp();
+  const { me, canAct } = useApp();
   const router = useRouter();
   const toast = useToast();
   const supabase = supabaseBrowser();
@@ -24,6 +26,9 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
   const [msgs, setMsgs] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [files, setFiles] = useState<Media[]>([]);
+  const [attaching, setAttaching] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [blockedNote, setBlockedNote] = useState("");
   const [menu, setMenu] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -61,22 +66,26 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
 
   async function send() {
     const body = text.trim();
-    if (!body || sending) return;
+    if ((!body && !files.length) || sending || uploading) return;
     setSending(true);
-    const { data, error } = await supabase.from("messages").insert({ conversation_id: id, body }).select().single();
+    const { data, error } = await supabase.from("messages").insert({ conversation_id: id, body, attachments: files }).select().single();
     setSending(false);
     if (error) {
       if (/row-level security/i.test(error.message)) setBlockedNote("You can't send messages here. One of you has blocked the other, or you've left this group.");
       else toast(friendlyError(error, "Couldn't send. Try again."));
       return;
     }
-    setText("");
+    setText(""); setFiles([]); setAttaching(false);
     setMsgs((m) => (m.some((x) => x.id === (data as Message).id) ? m : [...m, data as Message]));
   }
 
   async function deleteMsg(mid: string) {
+    const msg = msgs.find((x) => x.id === mid);
     const { error } = await supabase.from("messages").delete().eq("id", mid);
     if (error) return toast(friendlyError(error));
+    // Delete the files too, so they're really gone.
+    const paths = (msg?.attachments || []).map((a) => a.path).filter((p) => p.startsWith(`${me.id}/`));
+    if (paths.length) await supabase.storage.from("chat").remove(paths);
     setMsgs((m) => m.filter((x) => x.id !== mid));
   }
 
@@ -128,6 +137,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
             return (
               <div key={m.id} className={`bub ${mine ? "me" : ""}`}>
                 {conv.is_group && !mine && <span className="from">{names.get(m.sender_id) || "Former member"}</span>}
+                {!!m.attachments?.length && <MediaView items={m.attachments} bucket="chat" className="bub-media" />}
                 {m.body}
                 <small>
                   {timeAgo(m.created_at)}
@@ -140,14 +150,18 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
           <div ref={endRef} />
         </div>
 
-        <div className="composer">
+        {!canAct ? <div className="composer" style={{ justifyContent: "center" }}><a className="link-btn" href="/verify" style={{ margin: 0 }}><Icon name="lock" size={15} /> Verify your student account to send messages</a></div> : <div className="composer">
           {blockedNote && <p className="warn">{blockedNote}</p>}
+          {(attaching || files.length > 0) && (
+            <MediaPicker accept="any" max={6} bucket="chat" folder={`${me.id}/${id}`} value={files} onChange={setFiles} onBusy={setUploading} compact />
+          )}
           <div className="inline">
+            <button type="button" className="attach-btn" onClick={() => setAttaching((v) => !v)} aria-label="Add photos, videos or files" aria-pressed={attaching}><Icon name="clip" size={18} /></button>
             <input value={text} maxLength={4000} placeholder="Write a message" aria-label="Write a message"
               onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} />
-            <button onClick={send} disabled={sending || !text.trim()} aria-label="Send message"><Icon name="send" size={16} /></button>
+            <button onClick={send} disabled={sending || uploading || (!text.trim() && !files.length)} aria-label="Send message"><Icon name="send" size={16} /></button>
           </div>
-        </div>
+        </div>}
       </div>
 
       {menu && (

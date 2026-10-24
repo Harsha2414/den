@@ -6,8 +6,11 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 type Turn = { role: "user" | "assistant"; content: string };
 
 export async function POST(req: Request) {
-  const { user } = await getUser();
+  const { supabase, user } = await getUser();
   if (!user) return NextResponse.json({ error: "Sign in to ask a senior." }, { status: 401 });
+  const { data: allowed, error: accessErr } = await supabase.rpc("can_participate");
+  // If the verification update (0005) isn't in the database yet, the function is missing: allow as before.
+  if (!accessErr && allowed === false) return NextResponse.json({ error: "Verify your student account to ask the AI senior." }, { status: 403 });
   if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: "Ask a senior isn't set up yet." }, { status: 503 });
 
   let turns: Turn[];

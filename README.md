@@ -43,7 +43,7 @@ Tick these off as you go.
 1. Go to [supabase.com](https://supabase.com) and create a new project. Pick the **Mumbai (ap-south-1)** region so it's fast for Indian students. Save the database password somewhere safe.
 2. Open **SQL Editor**, then **New query**. Paste everything from `supabase/migrations/0001_init.sql` and click **Run**. You should see "Success".
 3. Make another new query, paste `supabase/migrations/0002_launch_basics.sql` and click **Run** (terms agreement and cleanup).
-   Then do the same with `supabase/migrations/0003_events.sql` (RSVPs, tickets, co-organisers, event updates), and then `supabase/migrations/0004_articles.sql` (articles, drafts, comments).
+   Then do the same with `supabase/migrations/0003_events.sql` (RSVPs, tickets, co-organisers, event updates), then `supabase/migrations/0004_articles.sql` (articles, drafts, comments), then `supabase/migrations/0005_verification.sql` (student verification, read-only mode, Den Admin), then `supabase/migrations/0006_media.sql` (photos, videos and files).
 4. Make another new query, paste `supabase/seed.sql` and click **Run**. This adds 50 well-known colleges. Students can add their own college when they sign up.
 5. **Set up an email sender (required for college-email codes).** Supabase's built-in sender only emails members of your own Supabase team, so students won't get codes without this. Open **Authentication > Emails > SMTP Settings**, turn on **Enable custom SMTP**, and pick one:
 
@@ -138,6 +138,33 @@ where id = (select id from auth.users where email = 'you@example.com');
 ```
 
 Admins can read all reports (in Supabase **Table Editor > reports**) and delete any post through the database.
+
+### 7. Student verification and Den Admin
+
+Students who sign in with Gmail can only look around until they verify, in one of three ways: a code sent to their **college email**, a photo of their **student ID card** (read by AI, then checked by a person in Den Admin; the photo is deleted after), or **two verified classmates** vouching for them. Accounts that existed before you ran `0005_verification.sql` get 14 days to verify.
+
+**In the Den project on Vercel, add these environment variables** (Settings → Environment Variables), then redeploy:
+
+| Key | Value | Secret? |
+|---|---|---|
+| `SMTP_HOST` | `smtp-relay.brevo.com` | no |
+| `SMTP_PORT` | `587` | no |
+| `SMTP_USER` | your Brevo SMTP login (Brevo → SMTP & API → SMTP) | no |
+| `SMTP_PASS` | your Brevo SMTP key | **yes** |
+| `SMTP_FROM` | `Den <the Gmail you verified in Brevo>` | no |
+| `CRON_SECRET` | any long random text (40+ letters and numbers) | **yes** |
+
+Without the SMTP keys the "College email" option shows "isn't switched on yet"; the other two still work. `CRON_SECRET` lets the daily clean-up (in `vercel.json`) delete old ID card photos.
+
+**Den Admin is a separate website** in the `admin/` folder. Students never see it. To put it online:
+
+1. Vercel → **Add New → Project** → import the same `den` repository again.
+2. Project name: `den-admin`. **Root Directory: `admin`** (click Edit next to it). Framework: Next.js.
+3. Environment variables: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (the same values as Den), `NEXT_PUBLIC_DEN_URL` = your Den address (e.g. `https://den-sable.vercel.app`), and optionally `ADMIN_EMAILS` = your Google email (only these emails can open Den Admin, as an extra lock).
+4. Deploy. Then in Supabase → Authentication → URL Configuration → Redirect URLs, add `https://den-admin*.vercel.app/**` (and your admin domain later, e.g. `https://admin.joinden.in/**`).
+5. Sign in with Google. Only accounts with `is_admin = true` get in (step 6 above). The database also refuses every admin action from anyone else.
+
+Den Admin never uses the Supabase service key. Everything goes through admin-only database functions that check `is_admin`.
 
 ### Allowing more college email domains
 

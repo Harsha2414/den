@@ -7,6 +7,7 @@ import { useApp } from "./AppContext";
 import Icon, { VerifiedTick, type IconName } from "./Icon";
 import Avatar from "./Avatar";
 import ThemeToggle from "./ThemeToggle";
+import { GateProvider } from "./Gate";
 
 /** Counts conversations with messages the student hasn't read yet, kept live. */
 function useUnread(userId: string) {
@@ -90,6 +91,7 @@ export function ChromeShell({ children }: { children: ReactNode }) {
   }, [menu]);
 
   return (
+    <GateProvider>
     <ChromeCtx.Provider value={{ openMenu: () => setMenu(true), openSwitch: () => setSwitcher(true), unread }}>
       <div className="shell">
         <div className={`drawer-scrim ${menu ? "show" : ""}`} onClick={() => setMenu(false)} aria-hidden="true" />
@@ -102,6 +104,7 @@ export function ChromeShell({ children }: { children: ReactNode }) {
       <BottomNav />
       {switcher && <CollegeSwitch onClose={() => setSwitcher(false)} />}
     </ChromeCtx.Provider>
+    </GateProvider>
   );
 }
 
@@ -185,7 +188,7 @@ function CollegeSwitch({ onClose }: { onClose: () => void }) {
 type Item = { href: string; label: string; icon: IconName; on?: boolean; tag?: string; badge?: number };
 
 function SideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { me, collegeName } = useApp();
+  const { me, collegeName, canAct } = useApp();
   const { unread } = useContext(ChromeCtx);
   const path = usePathname();
   const scope = useScope();
@@ -210,9 +213,9 @@ function SideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
     { href: "/ask", label: "Ask a senior", icon: "spark", on: path.startsWith("/ask"), tag: "AI" },
   ];
   const create: Item[] = [
-    { href: `/c/${me.college_id}?tab=events&new=1`, label: "Create an event", icon: "calPlus" },
-    { href: "/spaces?new=1", label: "Start a Space or debate", icon: "mic" },
-    { href: "/articles/new", label: "Write an article", icon: "pen", on: path === "/articles/new" },
+    { href: canAct ? `/c/${me.college_id}?tab=events&new=1` : "/verify", label: "Create an event", icon: "calPlus" },
+    { href: canAct ? "/spaces?new=1" : "/verify", label: "Start a Space or debate", icon: "mic" },
+    { href: canAct ? "/articles/new" : "/verify", label: "Write an article", icon: "pen", on: path === "/articles/new" },
   ];
   const yours: Item[] = [
     { href: "/events?tab=going", label: "My events & tickets", icon: "ticket" },
@@ -238,6 +241,9 @@ function SideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
         <span><b>{me.name}{me.verified && <VerifiedTick />}</b><small>{[collegeName(me.college_id), me.branch].filter(Boolean).join(" · ")}</small></span>
         <Icon name="chevRight" size={16} />
       </Link>
+      {!me.verified && (
+        <Link href="/verify" className="side-verify" onClick={onClose}><Icon name="shield" size={18} /> Get your blue tick <Icon name="chevRight" size={15} /></Link>
+      )}
       <nav className="side-scroll">
         <div className="side-main">{main.map(link)}</div>
         <div className="side-label">Study &amp; career</div>{study.map(link)}

@@ -20,8 +20,9 @@ export default function PrivacyPage() {
       <ul>
         <li><b>Account details:</b> your email address, and your name if you sign in with Google.</li>
         <li><b>Profile:</b> name, college, branch or course, year, and the optional &ldquo;About you&rdquo; text.</li>
-        <li><b>What you post:</b> posts, comments, likes, notes and links, placement stories, market listings, events, Spaces you host, and debate votes.</li>
-        <li><b>Private messages:</b> the messages you send and the chats and groups you&rsquo;re in.</li>
+        <li><b>What you post:</b> posts, comments, likes, notes and links, placement stories, market listings, events, articles, Spaces you host, and debate votes, including photos, videos and files you attach. Photos and files you attach to posts, listings, notes, events and articles can be opened by anyone who has their link.</li>
+        <li><b>Private messages:</b> the messages, photos, videos and files you send, and the chats and groups you&rsquo;re in. Files in chats can only be opened by the people in that chat.</li>
+        <li><b>Student verification:</b> if you verify, the college email you used, or a photo of your student ID card. Card photos are seen only by Den&rsquo;s reviewers and deleted after the check (within 7 days). We keep only a note of how and when you were verified, and a scrambled fingerprint of the card number so the same card can&rsquo;t verify two accounts. The photo is also sent to our AI provider so it can read the card.</li>
         <li><b>Safety records:</b> people you block, and reports you file or that are filed about your content.</li>
         <li><b>Ask a senior:</b> the questions you type, which are sent to our AI provider to get an answer. We keep only a daily count, not the questions.</li>
         <li><b>Technical data:</b> our hosting providers record basic logs such as IP address, browser and time of request, to keep Den running and secure.</li>

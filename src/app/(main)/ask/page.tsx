@@ -1,4 +1,5 @@
 "use client";
+import { useGate } from "@/components/Gate";
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/components/AppContext";
 import Icon from "@/components/Icon";
@@ -14,6 +15,7 @@ const STARTERS = [
 
 export default function AskPage() {
   const { me } = useApp();
+  const gate = useGate();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -26,6 +28,7 @@ export default function AskPage() {
   async function ask(q?: string) {
     const question = (q ?? text).trim();
     if (!question || busy) return;
+    if (!gate("ask the AI senior")) return;
     const next = [...turns, { role: "user" as const, content: question }];
     setTurns(next); setText(""); setBusy(true); setErr("");
     try {

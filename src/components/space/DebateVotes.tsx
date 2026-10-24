@@ -1,4 +1,5 @@
 "use client";
+import { useGate } from "../Gate";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { debateResult, ROUNDS } from "@/lib/debate";
 import type { Space } from "@/lib/types";
@@ -11,6 +12,7 @@ const pct = (x: number) => `${Math.round(x * 100)}%`;
 
 export default function DebateVotes({ space, votes }: { space: Space; votes: Vote[] }) {
   const { me } = useApp();
+  const gate = useGate();
   const toast = useToast();
   const before = { a: 0, b: 0 }, after = { a: 0, b: 0 };
   votes.forEach((v) => { (v.phase === "before" ? before : after)[v.side]++; });
@@ -25,6 +27,7 @@ export default function DebateVotes({ space, votes }: { space: Space; votes: Vot
 
   async function vote(side: "a" | "b") {
     if (!phase) return;
+    if (!gate("vote in debates")) return;
     const mine = phase === "before" ? myBefore : myAfter;
     const supabase = supabaseBrowser();
     const { error } = mine

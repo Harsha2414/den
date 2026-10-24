@@ -1,4 +1,5 @@
 "use client";
+import { useGate } from "../Gate";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   RoomAudioRenderer, useAudioPlayback, useConnectionState, useLocalParticipant,
@@ -40,6 +41,7 @@ export default function LiveRoom({ space, rows, votes, control, onLeave }: {
   space: Space; rows: SpaceParticipant[]; votes: Vote[]; control: Control; onLeave: () => void;
 }) {
   const { me } = useApp();
+  const gate = useGate();
   const toast = useToast();
   const room = useRoomContext();
   const conn = useConnectionState();
@@ -97,6 +99,7 @@ export default function LiveRoom({ space, rows, votes, control, onLeave }: {
   }, [canPublish, isMicrophoneEnabled, localParticipant]);
 
   async function toggleHand() {
+    if (!myRow?.hand_raised && !gate("speak in Spaces")) return;
     const next = !myRow?.hand_raised;
     const { error } = await supabaseBrowser().from("space_participants").update({ hand_raised: next }).match({ space_id: space.id, user_id: me.id });
     if (error) toast("Couldn't update your hand. Try again.");
