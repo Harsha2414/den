@@ -667,3 +667,6 @@ html.theme-fade, html.theme-fade * { transition: background-color .3s ease, colo
 @media (min-width: 1024px) { .chat-wrap { height: calc(100dvh - 58px - env(safe-area-inset-top, 0px)); } }
 @media (prefers-reduced-motion: reduce) { .typing-bub i { animation: none; opacity: .6; } }
 .emoji-box:has(em-emoji-picker) .spinner { display: none; }
+.emoji-panel { margin: 0 -4px 8px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); animation: up .18s ease-out; }
+.emoji-box.inline { min-height: 280px; }
+.emoji-box.inline em-emoji-picker { height: 280px; width: 100%; border-radius: 0; }

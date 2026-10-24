@@ -237,12 +237,14 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
     }
   }
 
+  // Emoji go in where the cursor was; the phone keyboard stays closed while the emoji panel is open.
+  const caret = useRef<number | null>(null);
   function addEmojiToText(e: string) {
-    const el = inputRef.current;
-    const at = el?.selectionStart ?? text.length;
-    const next = text.slice(0, at) + e + text.slice(at);
-    setText(next);
-    requestAnimationFrame(() => { el?.focus(); el?.setSelectionRange(at + e.length, at + e.length); });
+    setText((t) => {
+      const at = Math.min(caret.current ?? t.length, t.length);
+      caret.current = at + e.length;
+      return t.slice(0, at) + e + t.slice(at);
+    });
   }
 
   async function leave() {
@@ -365,19 +367,23 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
           {(attaching || files.length > 0) && (
             <MediaPicker accept="any" max={6} bucket="chat" folder={`${me.id}/${id}`} value={files} onChange={setFiles} onBusy={setUploading} compact />
           )}
+          {emojiFor === "composer" && <EmojiPicker inline title="Add emoji" onClose={() => setEmojiFor(null)} onPick={addEmojiToText} />}
           <div className="inline">
             <button type="button" className="attach-btn" onClick={() => setAttaching((v) => !v)} aria-label="Add photos, videos or files" aria-pressed={attaching}><Icon name="clip" size={18} /></button>
-            <button type="button" className="attach-btn" onClick={() => setEmojiFor("composer")} aria-label="Add emoji"><Icon name="smile" size={18} /></button>
+            <button type="button" className="attach-btn" onClick={() => setEmojiFor((v) => (v === "composer" ? null : "composer"))} aria-label={emojiFor === "composer" ? "Close emoji" : "Add emoji"} aria-pressed={emojiFor === "composer"}>
+              <Icon name={emojiFor === "composer" ? "x" : "smile"} size={18} />
+            </button>
             <input ref={inputRef} value={text} maxLength={4000} placeholder="Write a message" aria-label="Write a message"
-              onChange={(e) => onType(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} />
+              onFocus={() => setEmojiFor((v) => (v === "composer" ? null : v))}
+              onSelect={(e) => { caret.current = (e.target as HTMLInputElement).selectionStart; }}
+              onChange={(e) => { caret.current = e.target.selectionStart; onType(e.target.value); }} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} />
             <button onClick={send} disabled={sending || uploading || (!text.trim() && !files.length)} aria-label="Send message"><Icon name="send" size={16} /></button>
           </div>
         </div>}
       </div>
 
-      {emojiFor && (
-        <EmojiPicker title={emojiFor === "composer" ? "Add emoji" : "React"} onClose={() => setEmojiFor(null)}
-          onPick={(e) => { if (emojiFor === "composer") addEmojiToText(e); else react(emojiFor, e); }} />
+      {emojiFor && emojiFor !== "composer" && (
+        <EmojiPicker title="React" onClose={() => setEmojiFor(null)} onPick={(e) => react(emojiFor, e)} />
       )}
 
       {menu && (
