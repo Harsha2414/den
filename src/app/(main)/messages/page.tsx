@@ -1,6 +1,8 @@
 "use client";
 import { useGate } from "@/components/Gate";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { OnlineDot } from "@/components/Presence";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -20,24 +22,27 @@ export default function MessagesPage() {
   const router = useRouter();
   const toast = useToast();
   const supabase = supabaseBrowser();
-  const [convs, setConvs] = useState<ConvWithMembers[] | null>(null);
+  const qc = useQueryClient();
+  const inbox = useQuery({
+    queryKey: ["inbox", me.id],
+    queryFn: async () => {
+      const { data } = await supabase.from("conversations").select(CONV_SELECT).order("last_message_at", { ascending: false }).limit(100);
+      return (data || []) as unknown as ConvWithMembers[];
+    },
+  });
+  const convs = inbox.data ?? null;
   const [sheet, setSheet] = useState<null | "dm" | "group">(null);
   const [groupName, setGroupName] = useState("");
   const [picked, setPicked] = useState<Map<string, Author>>(new Map());
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async () => {
-    const { data } = await supabase.from("conversations").select(CONV_SELECT).order("last_message_at", { ascending: false }).limit(100);
-    setConvs((data || []) as unknown as ConvWithMembers[]);
-  }, [supabase]);
-
   useEffect(() => {
-    load();
+    const load = () => qc.invalidateQueries({ queryKey: ["inbox", me.id] });
     const ch = supabase.channel("inbox-" + me.id)
       .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [load, supabase, me.id]);
+  }, [qc, supabase, me.id]);
 
   async function openDm(p: Author) {
     if (!gate("message students")) return;
@@ -71,7 +76,7 @@ export default function MessagesPage() {
         <button className="secondary" onClick={() => { setSheet("group"); setPicked(new Map()); setGroupName(""); }}><Icon name="users" size={15} /> New group</button>
       </div>
 
-      {convs === null ? <div className="empty">Loading...</div> :
+      {convs === null ? <div className="list" aria-busy="true">{[0, 1, 2, 3].map((i) => <div key={i} className="pick skel"><span className="sk sk-av" /><div style={{ flex: 1 }}><span className="sk sk-line w40" /><span className="sk sk-line w70" /></div></div>)}</div> :
         convs.length === 0 ? <div className="empty">No conversations yet. Message a classmate, or start a group for your club or class.</div> :
         convs.map((c) => {
           const other = convOther(c, me.id);
@@ -80,7 +85,7 @@ export default function MessagesPage() {
             <Link key={c.id} href={`/messages/${c.id}`} className="pick">
               {c.is_group
                 ? <span className="av" style={{ background: "var(--teal-soft)", color: "var(--teal)" }}><Icon name="users" /></span>
-                : <Avatar id={other?.user_id || c.id} name={other?.profile?.name} />}
+                : <OnlineDot id={other?.user_id || ""}><Avatar id={other?.user_id || c.id} name={other?.profile?.name} /></OnlineDot>}
               <div>
                 <b>{convTitle(c, me.id)} {unread && <span className="tag no" style={{ marginLeft: 4 }}>New</span>}</b>
                 <span style={unread ? { color: "var(--ink)", fontWeight: 600 } : undefined}>

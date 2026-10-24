@@ -4,6 +4,7 @@ import { AppProvider } from "@/components/AppContext";
 import { ChromeShell } from "@/components/Chrome";
 import type { Access, College, Profile } from "@/lib/types";
 import Suspended from "@/components/Suspended";
+import QueryProvider from "@/components/QueryProvider";
 import TermsGate from "@/components/TermsGate";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       ) : (profile as Profile).terms_accepted_at === null ? (
         <TermsGate userId={user.id} />
       ) : (
-        <ChromeShell>{children}</ChromeShell>
+        <QueryProvider><ChromeShell>{children}</ChromeShell></QueryProvider>
       )}
     </AppProvider>
   );

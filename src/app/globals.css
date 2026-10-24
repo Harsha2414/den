@@ -168,7 +168,7 @@ button:disabled { cursor: default; }
 .chat-head { display: flex; align-items: center; gap: 10px; padding-block: 10px; border-bottom: 1px solid var(--line); }
 .chat-head > div { min-width: 0; flex: 1; }
 .chat-head b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chat { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-block: 12px; }
+.chat { flex: 1; min-height: 0; padding-top: 6px; }
 .bub { max-width: 80%; padding: 8px 12px; border-radius: 14px 14px 14px 4px; background: var(--surface); border: 1px solid var(--line); white-space: pre-wrap; align-self: flex-start; font-size: 15px; overflow-wrap: anywhere; }
 .bub.me { align-self: flex-end; background: var(--hero); color: var(--on-hero); border-color: transparent; border-radius: 14px 14px 4px 14px; }
 .bub small { display: block; font-size: 11px; opacity: .7; margin-top: 2px; }
@@ -635,3 +635,38 @@ html.theme-fade, html.theme-fade * { transition: background-color .3s ease, colo
 .prose figcaption { color: var(--muted); font-size: 14px; text-align: center; margin-top: 6px; }
 .ed-tools .wide { padding: 0 12px; display: inline-flex; gap: 6px; font-size: 14px; font-weight: 600; color: var(--teal); }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } }
+
+/* Long lists (drawn only while on screen) */
+.vlist .vitem { padding-bottom: 10px; }
+.more-loading { display: grid; place-items: center; padding: 18px 0; }
+.end-note { text-align: center; color: var(--muted); font-size: 13px; padding: 18px 0 6px; margin: 0; }
+.av-wrap { position: relative; display: inline-flex; flex: none; }
+.online-dot { position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; border-radius: 50%; background: #22B45E; box-shadow: 0 0 0 2.5px var(--surface); }
+
+/* Chat: rows, reactions, typing */
+.bub-row { display: flex; flex-direction: column; align-items: flex-start; padding: 3px 0; position: relative; }
+.bub-row.me { align-items: flex-end; }
+.bub { cursor: default; -webkit-user-select: text; user-select: text; transition: transform .12s ease; }
+.bub.picked { transform: scale(.98); box-shadow: 0 0 0 2px var(--saffron); }
+.react-bar { display: flex; gap: 2px; padding: 4px; margin-bottom: 4px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); animation: drop .16s ease-out; }
+.react-bar button { width: 38px; height: 38px; border: none; background: none; border-radius: 50%; font-size: 22px; display: grid; place-items: center; transition: transform .12s ease; }
+.react-bar button:hover { transform: scale(1.18); background: var(--chip); }
+.react-bar .more, .react-bar .del { font-size: 16px; color: var(--muted); }
+.react-bar .del { color: var(--rose); }
+.reacts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: -4px; padding: 0 6px; position: relative; z-index: 1; }
+.reacts button { height: 26px; padding: 0 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 14px; font-weight: 600; color: var(--muted); }
+.reacts button.mine { border-color: var(--teal); background: var(--teal-soft); color: var(--teal); }
+.typing-bub { display: inline-flex; gap: 4px; align-items: center; padding: 12px 14px; }
+.typing-bub i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite ease-in-out; }
+.typing-bub i:nth-child(2) { animation-delay: .2s; }
+.typing-bub i:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%, 60%, 100% { opacity: .25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+.typing-now { color: var(--leaf) !important; font-weight: 600; }
+.emoji-box { display: grid; place-items: center; min-height: 360px; }
+.emoji-box em-emoji-picker { width: 100%; max-width: 100%; height: 380px; --rgb-accent: 14, 94, 111; }
+@media (min-width: 1024px) { .chat-wrap { height: calc(100dvh - 58px - env(safe-area-inset-top, 0px)); } }
+@media (prefers-reduced-motion: reduce) { .typing-bub i { animation: none; opacity: .6; } }
+.emoji-box:has(em-emoji-picker) .spinner { display: none; }
+.emoji-panel { margin: 0 -4px 8px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); animation: up .18s ease-out; }
+.emoji-box.inline { min-height: 280px; }
+.emoji-box.inline em-emoji-picker { height: 280px; width: 100%; border-radius: 0; }

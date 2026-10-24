@@ -8,6 +8,7 @@ import Icon, { VerifiedTick, type IconName } from "./Icon";
 import Avatar from "./Avatar";
 import ThemeToggle from "./ThemeToggle";
 import { GateProvider } from "./Gate";
+import { OnlineProvider } from "./Presence";
 
 /** Counts conversations with messages the student hasn't read yet, kept live. */
 function useUnread(userId: string) {
@@ -91,7 +92,7 @@ export function ChromeShell({ children }: { children: ReactNode }) {
   }, [menu]);
 
   return (
-    <GateProvider>
+    <GateProvider><OnlineProvider>
     <ChromeCtx.Provider value={{ openMenu: () => setMenu(true), openSwitch: () => setSwitcher(true), unread }}>
       <div className="shell">
         <div className={`drawer-scrim ${menu ? "show" : ""}`} onClick={() => setMenu(false)} aria-hidden="true" />
@@ -104,7 +105,7 @@ export function ChromeShell({ children }: { children: ReactNode }) {
       <BottomNav />
       {switcher && <CollegeSwitch onClose={() => setSwitcher(false)} />}
     </ChromeCtx.Provider>
-    </GateProvider>
+    </OnlineProvider></GateProvider>
   );
 }
 

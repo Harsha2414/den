@@ -1,6 +1,8 @@
 "use client";
 import { useGate, VerifyBanner, VouchInbox } from "./Gate";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Virtuoso } from "react-virtuoso";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -19,6 +21,8 @@ import ReportSheet from "./ReportSheet";
 const INDIA_TABS: SectionKey[] = ["posts", "notes", "placements", "events"];
 const COLLEGE_TABS: SectionKey[] = ["posts", "notes", "placements", "listings", "events"];
 
+const PAGE = 20;
+
 const TITLES: Record<SectionKey, string> = { posts: "Feed", notes: "Notes & PYQs", placements: "Placements", listings: "Market", events: "Events" };
 
 export default function ScopeHome({ scope, initialTab, startComposing }: { scope: string; initialTab?: string; startComposing?: boolean }) {
@@ -33,57 +37,70 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
   const tabs = india ? INDIA_TABS : COLLEGE_TABS;
   const [tab] = useState<SectionKey>(tabs.includes(initialTab as SectionKey) ? (initialTab as SectionKey) : "posts");
   const [searching, setSearching] = useState(false);
-  const [items, setItems] = useState<AnyItem[] | null>(null);
-  const [rsvpMap, setRsvpMap] = useState<Record<string, { going: number; mine: RsvpStatus | null }>>({});
-  const [likeMap, setLikeMap] = useState<Record<string, { n: number; mine: boolean }>>({});
-  const [liveSpaces, setLiveSpaces] = useState<Space[]>([]);
+  const [likeOver, setLikeOver] = useState<Record<string, { n: number; mine: boolean }>>({});
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
+  const [patched, setPatched] = useState<Record<string, Partial<AnyItem>>>({});
   const [query, setQuery] = useState("");
   const { canAct } = useApp();
   const [composing, setComposing] = useState(!!startComposing && canAct && (scope === me.college_id || scope === "india"));
   const [reporting, setReporting] = useState<string | null>(null);
-  const [error, setError] = useState("");
+  const qc = useQueryClient();
+  const key = ["scope", scope, tab] as const;
 
-  const load = useCallback(async () => {
-    setError("");
-    const author = `author:profiles!${tab}_author_id_fkey(${AUTHOR_COLS})`;
-    const sel = tab === "posts" ? `*, ${author}, comments(count)` : `*, ${author}`;
-    let q = supabase.from(tab).select(sel);
-    if (tab === "posts" && india) q = q.eq("visibility", "india");
-    if (!india) q = q.eq("college_id", scope);
-    if (tab === "events") {
-      q = q.gte("event_date", todayIST()).order("event_date", { ascending: true });
-    } else {
-      q = q.order("created_at", { ascending: false });
-    }
-    const { data, error: err } = await q.limit(60);
-    if (err) { setItems([]); setError(friendlyError(err, "Couldn't load this page. Pull to refresh or try again.")); return; }
-    const rows = (data || []) as unknown as AnyItem[];
-    setItems(rows);
+  type Page = { rows: AnyItem[]; likes: Record<string, { n: number; mine: boolean }>; rsvps: Record<string, { going: number; mine: RsvpStatus | null }> };
+  const feed = useInfiniteQuery({
+    queryKey: key,
+    initialPageParam: 0,
+    getNextPageParam: (last: Page, all: Page[]) => (last.rows.length < PAGE ? undefined : all.length * PAGE),
+    queryFn: async ({ pageParam }): Promise<Page> => {
+      const author = `author:profiles!${tab}_author_id_fkey(${AUTHOR_COLS})`;
+      const sel = tab === "posts" ? `*, ${author}, comments(count)` : `*, ${author}`;
+      let q = supabase.from(tab).select(sel);
+      if (tab === "posts" && india) q = q.eq("visibility", "india");
+      if (!india) q = q.eq("college_id", scope);
+      q = tab === "events" ? q.gte("event_date", todayIST()).order("event_date", { ascending: true }) : q.order("created_at", { ascending: false });
+      const { data, error: err } = await q.range(pageParam, pageParam + PAGE - 1);
+      if (err) throw new Error(friendlyError(err, "Couldn't load this page. Try again."));
+      const rows = (data || []) as unknown as AnyItem[];
+      const ids = rows.map((r) => r.id);
+      const likes: Page["likes"] = {};
+      const rsvps: Page["rsvps"] = {};
+      const likeType = LIKE_TYPE_OF[tab];
+      if (likeType && ids.length) {
+        const { data: ls } = await supabase.from("likes").select("item_id,user_id").eq("item_type", likeType).in("item_id", ids);
+        (ls || []).forEach((l: { item_id: string; user_id: string }) => { const e = (likes[l.item_id] ||= { n: 0, mine: false }); e.n++; if (l.user_id === me.id) e.mine = true; });
+      }
+      if (tab === "events" && ids.length) {
+        const { data: rs } = await supabase.from("event_rsvps").select("event_id,user_id,status").in("event_id", ids);
+        (rs || []).forEach((x: { event_id: string; user_id: string; status: RsvpStatus }) => {
+          const e = (rsvps[x.event_id] ||= { going: 0, mine: null });
+          if (x.status === "going") e.going++;
+          if (x.user_id === me.id) e.mine = x.status;
+        });
+      }
+      return { rows, likes, rsvps };
+    },
+  });
+  const error = feed.error ? (feed.error as Error).message : "";
+  const items = useMemo(() => feed.data
+    ? feed.data.pages.flatMap((p) => p.rows).filter((r) => !removed.has(r.id)).map((r) => (patched[r.id] ? { ...r, ...patched[r.id] } as AnyItem : r))
+    : null, [feed.data, removed, patched]);
+  const likeMap = useMemo(() => ({ ...Object.assign({}, ...(feed.data?.pages.map((p) => p.likes) || [])), ...likeOver }), [feed.data, likeOver]) as Record<string, { n: number; mine: boolean }>;
+  const rsvpMap = useMemo(() => Object.assign({}, ...(feed.data?.pages.map((p) => p.rsvps) || [])), [feed.data]) as Page["rsvps"];
+  // Fresh data from the server replaces quick local changes.
+  useEffect(() => { setLikeOver({}); setPatched({}); }, [feed.dataUpdatedAt]);
+  const reload = () => qc.invalidateQueries({ queryKey: key });
 
-    if (tab === "events" && rows.length) {
-      const { data: rs } = await supabase.from("event_rsvps").select("event_id,user_id,status").in("event_id", rows.map((r) => r.id));
-      const m: Record<string, { going: number; mine: RsvpStatus | null }> = {};
-      (rs || []).forEach((x: { event_id: string; user_id: string; status: RsvpStatus }) => {
-        const e = (m[x.event_id] ||= { going: 0, mine: null });
-        if (x.status === "going") e.going++;
-        if (x.user_id === me.id) e.mine = x.status;
-      });
-      setRsvpMap(m);
-    }
-
-    const likeType = LIKE_TYPE_OF[tab];
-    if (likeType && rows.length) {
-      const { data: likes } = await supabase.from("likes").select("item_id,user_id").eq("item_type", likeType).in("item_id", rows.map((r) => r.id));
-      const m: Record<string, { n: number; mine: boolean }> = {};
-      (likes || []).forEach((l: { item_id: string; user_id: string }) => {
-        const e = (m[l.item_id] ||= { n: 0, mine: false });
-        e.n++; if (l.user_id === me.id) e.mine = true;
-      });
-      setLikeMap(m);
-    } else setLikeMap({});
-  }, [tab, india, scope, supabase, me.id]);
-
-  useEffect(() => { setItems(null); load(); }, [load]);
+  const liveQ = useQuery({
+    queryKey: ["live", scope],
+    queryFn: async () => {
+      let q = supabase.from("spaces").select(`*, host:profiles!spaces_host_id_fkey(${AUTHOR_COLS})`).eq("status", "live");
+      q = india ? q.eq("visibility", "india") : q.eq("college_id", scope);
+      const { data } = await q.order("started_at", { ascending: false }).limit(5);
+      return (data || []) as Space[];
+    },
+  });
+  const liveSpaces = liveQ.data || [];
 
   // The search button in the top bar opens and closes the search box.
   useEffect(() => {
@@ -97,12 +114,6 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
     if (startComposing) router.replace(india ? `/india?tab=${tab}` : `/c/${scope}?tab=${tab}`);
   }
 
-  useEffect(() => {
-    let q = supabase.from("spaces").select(`*, host:profiles!spaces_host_id_fkey(${AUTHOR_COLS})`).eq("status", "live");
-    q = india ? q.eq("visibility", "india") : q.eq("college_id", scope);
-    q.order("started_at", { ascending: false }).limit(5).then(({ data }: { data: unknown[] | null }) => setLiveSpaces((data || []) as Space[]));
-  }, [india, scope, supabase]);
-
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!items) return null;
@@ -114,17 +125,17 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
     if (!gate("like posts")) return;
     const likeType = LIKE_TYPE_OF[tab]; if (!likeType) return;
     const cur = likeMap[item.id] || { n: 0, mine: false };
-    setLikeMap({ ...likeMap, [item.id]: { n: cur.n + (cur.mine ? -1 : 1), mine: !cur.mine } });
+    setLikeOver((m) => ({ ...m, [item.id]: { n: cur.n + (cur.mine ? -1 : 1), mine: !cur.mine } }));
     const res = cur.mine
       ? await supabase.from("likes").delete().match({ user_id: me.id, item_type: likeType, item_id: item.id })
       : await supabase.from("likes").insert({ item_type: likeType, item_id: item.id });
-    if (res.error) { setLikeMap((m) => ({ ...m, [item.id]: cur })); toast(friendlyError(res.error)); }
+    if (res.error) { setLikeOver((m) => ({ ...m, [item.id]: cur })); toast(friendlyError(res.error)); }
   }
 
   async function remove(item: AnyItem) {
     const { error: err } = await supabase.from(tab).delete().eq("id", item.id);
     if (err) return toast(friendlyError(err, "Couldn't delete that."));
-    setItems((xs) => (xs || []).filter((x) => x.id !== item.id));
+    setRemoved((r) => new Set(r).add(item.id));
     toast("Deleted");
   }
 
@@ -132,7 +143,7 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
     const sold = !(item as { sold?: boolean }).sold;
     const { error: err } = await supabase.from("listings").update({ sold }).eq("id", item.id);
     if (err) return toast(friendlyError(err));
-    setItems((xs) => (xs || []).map((x) => (x.id === item.id ? { ...x, sold } : x)));
+    setPatched((p) => ({ ...p, [item.id]: { ...p[item.id], sold } as Partial<AnyItem> }));
   }
 
   const sec = SECTIONS[tab];
@@ -187,25 +198,35 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
             {!query && canPostHere && <button className="secondary" onClick={() => { if (gate("post")) setComposing(true); }}>{sec.cta}</button>}
           </div>
         ) : (
-          <div className={tab === "posts" ? "feed" : "list"}>
-            {shown.map((item) => tab === "events" ? (
-              <EventCard key={item.id} ev={item as CampusEvent} showCollege={india}
-                going={rsvpMap[item.id]?.going || 0} mine={rsvpMap[item.id]?.mine} organiser={item.author_id === me.id} />
+          <Virtuoso
+            useWindowScroll
+            data={shown}
+            computeItemKey={(_, item) => item.id}
+            increaseViewportBy={{ top: 600, bottom: 1200 }}
+            endReached={() => { if (feed.hasNextPage && !feed.isFetchingNextPage && !query) feed.fetchNextPage(); }}
+            className={tab === "posts" ? "feed" : "vlist"}
+            itemContent={(_, item) => tab === "events" ? (
+              <div className="vitem"><EventCard ev={item as CampusEvent} showCollege={india}
+                going={rsvpMap[item.id]?.going || 0} mine={rsvpMap[item.id]?.mine} organiser={item.author_id === me.id} /></div>
             ) : (
-              <ItemCard key={item.id} type={tab} item={item} showCollege={india}
+              <div className={tab === "posts" ? "" : "vitem"}><ItemCard type={tab} item={item} showCollege={india}
                 likes={likeMap[item.id]?.n || 0} liked={!!likeMap[item.id]?.mine}
                 actions={{
                   onLike: LIKE_TYPE_OF[tab] ? () => toggleLike(item) : undefined,
                   onDelete: () => remove(item),
                   onReport: () => setReporting(item.id),
                   onToggleSold: tab === "listings" ? () => toggleSold(item) : undefined,
-                }} />
-            ))}
-          </div>
+                }} /></div>
+            )}
+            components={{
+              Footer: () => feed.isFetchingNextPage ? <div className="more-loading"><span className="spinner" /></div>
+                : !feed.hasNextPage && shown.length >= PAGE && !query ? <p className="end-note">You&rsquo;re all caught up</p> : null,
+            }}
+          />
         )}
 
       {canPostHere && <button className="fab" onClick={() => { if (gate("post")) setComposing(true); }} aria-label={sec.cta}><Icon name="plus" size={24} /><span>{sec.cta}</span></button>}
-      {composing && <Composer section={tab} defaultIndia={india} onClose={closeComposer} onPosted={(id) => { setComposing(false); if (tab === "events" && id) router.push(`/events/${id}`); else { if (startComposing) closeComposer(); load(); } }} />}
+      {composing && <Composer section={tab} defaultIndia={india} onClose={closeComposer} onPosted={(id) => { setComposing(false); if (tab === "events" && id) router.push(`/events/${id}`); else { if (startComposing) closeComposer(); reload(); } }} />}
       {reporting && <ReportSheet targetType={REPORT_TYPE_OF[tab]} targetId={reporting} onClose={() => setReporting(null)} />}
     </main>
   );
