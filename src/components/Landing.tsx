@@ -1,14 +1,13 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { applyTheme } from "./ThemeToggle";
 import PolicyLinks from "./PolicyLinks";
+import CollegeSearch, { type CollegeHit } from "./CollegeSearch";
+import { EDITION_COOKIE, readEditionCookie, writeEditionCookie, type Edition } from "@/lib/edition";
 import "./landing.css";
 
-export type EditionCollege = { id: string; name: string; city: string | null };
-
-/** Cookie that carries the college a visitor picked here into sign-up. */
-export const EDITION_COOKIE = "den_edition";
+export type EditionCollege = CollegeHit;
 
 const LANGS: { id: string; label: string; head: string }[] = [
   { id: "en", label: "English", head: "" },
@@ -64,7 +63,7 @@ export default function Landing({ colleges }: { colleges: EditionCollege[] }) {
   const [today, setToday] = useState(() => todayInIndia());
   const [lang, setLang] = useState("en");
   const [night, setNight] = useState<boolean | null>(null);
-  const [edition, setEdition] = useState<EditionCollege | null>(null);
+  const [edition, setEdition] = useState<Edition | null>(null);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [branch, setBranch] = useState("CSE");
   const [reveal, setReveal] = useState(false);
@@ -79,8 +78,9 @@ export default function Landing({ colleges }: { colleges: EditionCollege[] }) {
     setNight(t ? t === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches);
     // Bring back a college picked on an earlier visit.
     const m = document.cookie.match(new RegExp(`${EDITION_COOKIE}=([^;]+)`));
-    if (m) { const c = colleges.find((x) => x.id === decodeURIComponent(m[1])); if (c) setEdition(c); }
-  }, [colleges]);
+    const saved = readEditionCookie(m?.[1]);
+    if (saved) setEdition(saved);
+  }, []);
 
   // Pen marks draw as they scroll into view.
   useEffect(() => {
@@ -107,12 +107,10 @@ export default function Landing({ colleges }: { colleges: EditionCollege[] }) {
     return () => io.disconnect();
   }, []);
 
-  function pickEdition(c: EditionCollege | null) {
-    setEdition(c);
-    try {
-      document.cookie = c ? `${EDITION_COOKIE}=${encodeURIComponent(c.id)}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`
-        : `${EDITION_COOKIE}=; path=/; max-age=0`;
-    } catch { /* cookies blocked: the page still works */ }
+  function pickEdition(c: Edition | null) {
+    const e = c ? { id: c.id, name: c.name } : null;
+    setEdition(e);
+    try { writeEditionCookie(e); } catch { /* cookies blocked: the page still works */ }
   }
   function toggleNight() { const next = !night; applyTheme(next ? "dark" : "light"); setNight(next); }
 
@@ -404,20 +402,8 @@ export default function Landing({ colleges }: { colleges: EditionCollege[] }) {
   );
 }
 
-/** "Pick your edition": type a few letters of your college. */
-function EditionPicker({ colleges, value, onPick }: { colleges: EditionCollege[]; value: EditionCollege | null; onPick: (c: EditionCollege | null) => void }) {
-  const [q, setQ] = useState("");
-  const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(0);
-  const matches = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s) return colleges.slice(0, 8);
-    return colleges.filter((c) => `${c.name} ${c.city || ""}`.toLowerCase().includes(s)).slice(0, 8);
-  }, [q, colleges]);
-
-  function choose(c: EditionCollege) { onPick(c); setQ(""); setOpen(false); }
-
-  if (!colleges.length) return null;
+/** "Pick your edition": search any college in India. */
+function EditionPicker({ colleges, value, onPick }: { colleges: EditionCollege[]; value: Edition | null; onPick: (c: Edition | null) => void }) {
   return (
     <div className="np-edition">
       <label htmlFor="np-ed" className="np-ed-label">Pick your edition:</label>
@@ -427,27 +413,7 @@ function EditionPicker({ colleges, value, onPick }: { colleges: EditionCollege[]
           <button type="button" onClick={() => onPick(null)}>change</button>
         </span>
       ) : (
-        <div className="np-ed-box">
-          <input id="np-ed" role="combobox" aria-expanded={open} aria-controls="np-ed-list" aria-autocomplete="list"
-            placeholder="Type your college" value={q} autoComplete="off"
-            onChange={(e) => { setQ(e.target.value); setOpen(true); setActive(0); }}
-            onFocus={() => setOpen(true)} onBlur={() => window.setTimeout(() => setOpen(false), 150)}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowDown") { e.preventDefault(); setActive((a) => Math.min(a + 1, matches.length - 1)); }
-              if (e.key === "ArrowUp") { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)); }
-              if (e.key === "Enter" && matches[active]) { e.preventDefault(); choose(matches[active]); }
-              if (e.key === "Escape") setOpen(false);
-            }} />
-          {open && (
-            <ul id="np-ed-list" role="listbox" className="np-ed-list">
-              {matches.length ? matches.map((c, i) => (
-                <li key={c.id} role="option" aria-selected={i === active} onMouseDown={(e) => { e.preventDefault(); choose(c); }}>
-                  <b>{c.name}</b>{c.city && <small>{c.city}</small>}
-                </li>
-              )) : <li className="np-ed-none">No match yet. You can add your college when you sign up.</li>}
-            </ul>
-          )}
-        </div>
+        <CollegeSearch id="np-ed" className="np-ed-box" placeholder="Type your college" suggestions={colleges} onPick={onPick} />
       )}
       {!value && <span className="hand np-ed-note">← try it, the paper changes</span>}
     </div>

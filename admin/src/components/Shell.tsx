@@ -13,6 +13,7 @@ const NAV = [
   { href: "/verification", label: "Verification", key: "verification" },
   { href: "/reports", label: "Reports", key: "reports" },
   { href: "/students", label: "Students", key: "" },
+  { href: "/colleges", label: "Colleges", key: "colleges" },
 ];
 
 export default function Shell({ me, colleges, counts, denUrl, children }: {

@@ -12,14 +12,17 @@ export const dynamic = "force-dynamic";
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
   const { supabase, user } = await getUser();
   if (!user) redirect("/login");
-  const [{ data: profile }, { data: colleges }, { data: access }] = await Promise.all([
+  const [{ data: profile }, active, { data: access }] = await Promise.all([
     // select("*") so the app keeps working even before the terms_accepted_at column is added
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-    supabase.from("colleges").select("id,name,city").order("name"),
+    // Colleges with students on Den. The full India list (~70,000) is searched when needed, never loaded whole.
+    supabase.rpc("active_colleges"),
     // null until migration 0005 is run; the app then treats college-email students as verified
     supabase.rpc("my_access"),
   ]);
   if (!profile) redirect("/onboarding");
+  // Before migration 0008 is run, fall back to the old full list.
+  const colleges = active.error ? (await supabase.from("colleges").select("id,name,city").order("name")).data : active.data;
 
   return (
     <AppProvider me={profile as Profile} colleges={(colleges || []) as College[]} access={(access as Access | null) || undefined}>

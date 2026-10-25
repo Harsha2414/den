@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useCallback, createContext, useContext, type ReactNode } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { useApp } from "./AppContext";
+import CollegeSearch from "./CollegeSearch";
 import Icon, { VerifiedTick, type IconName } from "./Icon";
 import Avatar from "./Avatar";
 import ThemeToggle from "./ThemeToggle";
@@ -61,7 +62,7 @@ const ChromeCtx = createContext<{ openMenu: () => void; openSwitch: () => void; 
 });
 
 export function ChromeShell({ children }: { children: ReactNode }) {
-  const { me } = useApp();
+  const { me, ensureCollege } = useApp();
   const path = usePathname();
   const scope = useScope();
   const unread = useUnread(me.id);
@@ -71,6 +72,8 @@ export function ChromeShell({ children }: { children: ReactNode }) {
   // Close the drawer and switch on every page change.
   const query = useSearchParams().toString();
   useEffect(() => { setMenu(false); setSwitcher(false); }, [path, query]);
+
+  useEffect(() => { ensureCollege(scope); }, [scope, ensureCollege]);
 
   // Remember other colleges the student browses.
   useEffect(() => {
@@ -144,10 +147,11 @@ function TopBar() {
 // ---------- College switch (drops down from the top) ----------
 
 function CollegeSwitch({ onClose }: { onClose: () => void }) {
-  const { me, college } = useApp();
+  const { me, college, colleges, ensureCollege } = useApp();
   const scope = useScope();
   const router = useRouter();
   const [recent, setRecent] = useState<string[]>([]);
+  useEffect(() => { readRecent().forEach(ensureCollege); }, [ensureCollege]);
   useEffect(() => { setRecent(readRecent().filter((id) => id !== me.college_id && college(id))); }, [me.college_id, college]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -177,7 +181,11 @@ function CollegeSwitch({ onClose }: { onClose: () => void }) {
             <div className="switch-label">Recently visited</div>
             {recent.map((id) => <Row key={id} id={id} href={`/c/${id}`} title={college(id)!.name} sub={college(id)!.city} badge={initials(college(id)!.name)} />)}
           </>}
-          <Link href="/colleges" className="switch-browse" onClick={onClose}><Icon name="search" size={18} /> Browse all colleges</Link>
+          <div className="switch-label">Visit another college</div>
+          <CollegeSearch className="switch-search" placeholder="Search any college in India"
+            suggestions={colleges.filter((c) => c.id !== me.college_id).slice(0, 6)}
+            onPick={(c) => go(`/c/${c.id}`)} />
+          <Link href="/colleges" className="switch-browse" onClick={onClose}><Icon name="search" size={18} /> Browse colleges on Den</Link>
         </div>
       </div>
     </div>

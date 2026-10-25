@@ -1,6 +1,6 @@
 export type Year = "1st year" | "2nd year" | "3rd year" | "4th year" | "5th year" | "Postgrad" | "Alumni";
 
-export interface College { id: string; name: string; city: string }
+export interface College { id: string; name: string; city: string; state?: string; students?: number }
 
 export interface Profile {
   id: string;
