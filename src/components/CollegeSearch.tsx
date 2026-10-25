@@ -1,12 +1,16 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { collegesReady, preloadColleges, searchLocal } from "@/lib/collegeSearchClient";
 
 export type CollegeHit = { id: string; name: string; city?: string | null; state?: string | null; students?: number };
 
-/** Search every college in India (about 70,000) by name, short name ("IITB", "DU") or city. */
+/** Search every college in India (about 70,000) by name, short name ("IITB", "DU") or city.
+ *  Uses the list on the phone when it has loaded (instant), otherwise asks the database. */
 export async function searchColleges(q: string, lim = 8): Promise<CollegeHit[]> {
   if (q.trim().length < 2) return [];
+  const local = await searchLocal(q, lim);
+  if (local) return local;
   const { data, error } = await supabaseBrowser().rpc("search_colleges", { q, lim });
   if (error) throw error;
   return (data || []) as CollegeHit[];
@@ -33,20 +37,27 @@ export default function CollegeSearch({ id, onPick, suggestions = [], placeholde
   const [active, setActive] = useState(0);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
   const seq = useRef(0);
+  const [, setLocalReady] = useState(false);
+
+  // Start loading the India list in the background as soon as a search box appears.
+  useEffect(() => { preloadColleges().then(setLocalReady); }, []);
 
   useEffect(() => {
     const term = q.trim();
     if (term.length < 2) { setHits([]); setState("idle"); return; }
     const mine = ++seq.current;
-    setState("loading");
-    const t = window.setTimeout(async () => {
+    const run = async () => {
       try {
         const r = await searchColleges(term, 8);
         if (mine === seq.current) { setHits(r); setActive(0); setState("idle"); }
       } catch {
         if (mine === seq.current) setState("error");
       }
-    }, 180);
+    };
+    // On the phone: search on every letter, no waiting. From the database: wait for a short pause in typing.
+    if (collegesReady()) { run(); return; }
+    setState("loading");
+    const t = window.setTimeout(run, 120);
     return () => window.clearTimeout(t);
   }, [q]);
 
