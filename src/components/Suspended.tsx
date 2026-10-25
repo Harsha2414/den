@@ -3,11 +3,12 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { LEGAL } from "@/lib/legal";
 import Icon from "./Icon";
+import { clearRememberChoice } from "@/lib/remember";
 
 export default function Suspended() {
   const router = useRouter();
   async function signOut() {
-    await supabaseBrowser().auth.signOut();
+    await supabaseBrowser().auth.signOut(); clearRememberChoice();
     router.replace("/login"); router.refresh();
   }
   return (

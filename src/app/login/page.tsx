@@ -5,6 +5,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import Link from "next/link";
 import { friendlyError, looksAcademic, safeNext } from "@/lib/format";
 import Icon from "@/components/Icon";
+import { setRememberChoice } from "@/lib/remember";
 import PolicyLinks from "@/components/PolicyLinks";
 
 // Set NEXT_PUBLIC_EMAIL_CODES=off in Vercel (then redeploy) to hide email-code sign-in until an email sender works.
@@ -19,9 +20,12 @@ export default function LoginPage() {
   const [err, setErr] = useState("");
   const [deletedNotice, setDeletedNotice] = useState(false);
   const [next, setNext] = useState("/");
+  const [remember, setRemember] = useState(true);
+  const [expired, setExpired] = useState(false);
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     setDeletedNotice(q.get("deleted") === "1");
+    setExpired(q.get("expired") === "1");
     setNext(safeNext(q.get("next")));
   }, []);
 
@@ -30,9 +34,11 @@ export default function LoginPage() {
     setErr("");
     // Remember the page they came for; the sign-in callback reads this and sends them there.
     document.cookie = `den_next=${encodeURIComponent(next)}; path=/; max-age=600; samesite=lax`;
+    setRememberChoice(remember);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      // Always show Google's account chooser, so nobody is signed in to Den without picking an account.
+      options: { redirectTo: `${window.location.origin}/auth/callback`, queryParams: { prompt: "select_account" } },
     });
     if (error) setErr(friendlyError(error, "Couldn't start Google sign-in. Try again."));
   }
@@ -69,6 +75,7 @@ export default function LoginPage() {
     const token = code.replace(/\s/g, "");
     if (!/^\d{6,8}$/.test(token)) return setErr("Enter the code from the email.");
     setBusy(true); setErr("");
+    setRememberChoice(remember);
     const { error } = await supabase.auth.verifyOtp({ email, token, type: "email" });
     setBusy(false);
     if (error) return setErr("That code is wrong or expired. Check the email or send a new code.");
@@ -102,6 +109,7 @@ export default function LoginPage() {
 
           <div className="form">
             {deletedNotice && <p className="notice">Your account has been deleted. Thanks for being part of Den.</p>}
+            {expired && <p className="notice">You were signed out because &ldquo;Keep me signed in&rdquo; was off. Sign in again to carry on.</p>}
             {err && <p className="err" role="alert">{err}</p>}
             {stage === "email" ? (
               <>
@@ -132,6 +140,10 @@ export default function LoginPage() {
               </form>
             )}
           </div>
+          <label className="remember">
+            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+            <span><b>Keep me signed in</b><small>{remember ? "Stay signed in on this device." : "You'll be signed out when you close the browser, or after 12 hours. Best on a shared or college computer."}</small></span>
+          </label>
           <p className="auth-fine">Den is for students aged 18 and over. By continuing, you agree to our <Link href="/terms">terms</Link> and <Link href="/privacy">privacy policy</Link>.</p>
         </div>
         <PolicyLinks />

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { REMEMBER_COOKIE, shortSessionExpired, withRemember } from "@/lib/remember";
 
 const PUBLIC_PATHS = ["/welcome", "/opengraph-image", "/twitter-image", "/login", "/auth", "/privacy", "/terms", "/guidelines"];
 
@@ -14,14 +15,24 @@ export async function middleware(request: NextRequest) {
         setAll: (list) => {
           list.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
-          list.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+          list.forEach(({ name, value, options }) => response.cookies.set(name, value, withRemember(options, request.cookies.get(REMEMBER_COOKIE)?.value)));
         },
       },
     },
   );
 
-  const { data } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
+  // "Keep me signed in" was not ticked and 12 hours have passed: sign out on this device.
+  if (shortSessionExpired(request.cookies.get(REMEMBER_COOKIE)?.value) && !path.startsWith("/auth")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login"; url.search = "?expired=1";
+    const out = NextResponse.redirect(url);
+    request.cookies.getAll().filter((c) => c.name.startsWith("sb-")).forEach((c) => out.cookies.set(c.name, "", { path: "/", maxAge: 0 }));
+    out.cookies.set(REMEMBER_COOKIE, "", { path: "/", maxAge: 0 });
+    return out;
+  }
+
+  const { data } = await supabase.auth.getUser();
   const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + "/"));
 
   // Signed-out visitors to the home address see the landing page (the address stays "/").

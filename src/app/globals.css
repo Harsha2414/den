@@ -741,3 +741,7 @@ html.theme-fade, html.theme-fade * { transition: background-color .3s ease, colo
 .pf-like-btn span { color: var(--muted); font-size: 13px; }
 .switch-search { margin: 4px 0 10px; }
 .browse-search { margin-bottom: 12px; }
+.remember { display: flex; gap: 12px; align-items: flex-start; margin-top: 18px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
+.remember input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--teal); flex: none; }
+.remember span { display: grid; gap: 2px; }
+.remember small { color: var(--muted); font-size: 13px; line-height: 1.4; }

@@ -11,6 +11,7 @@ import Icon, { VerifiedTick } from "@/components/Icon";
 import Sheet from "@/components/Sheet";
 import PolicyLinks from "@/components/PolicyLinks";
 import ThemeToggle from "@/components/ThemeToggle";
+import { clearRememberChoice } from "@/lib/remember";
 
 export default function MePage() {
   const { me, colleges, college, collegeName } = useApp();
@@ -42,13 +43,13 @@ export default function MePage() {
     const res = await fetch("/api/account/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: confirmText }) });
     const j = await res.json().catch(() => ({}));
     if (!res.ok) { setDeleteBusy(false); return setDeleteErr(j.error || "Couldn't delete your account. Try again."); }
-    await supabase.auth.signOut().catch(() => {});
+    await supabase.auth.signOut().catch(() => {}); clearRememberChoice();
     router.replace("/login?deleted=1");
     router.refresh();
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut(); clearRememberChoice();
     router.replace("/login");
     router.refresh();
   }
