@@ -13,14 +13,16 @@ function slug(s: string) {
   return `${base}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export default function ProfileForm({ userId, colleges, initial, onDone }: {
+export default function ProfileForm({ userId, colleges, initial, onDone, suggestedCollege }: {
   userId: string; colleges: College[]; initial?: Profile | null; onDone?: () => void;
+  /** Pre-selected for a new student (from the landing page's "Pick your edition"). */
+  suggestedCollege?: string;
 }) {
   const router = useRouter();
   const supabase = supabaseBrowser();
   const sorted = useMemo(() => [...colleges].sort((a, b) => a.name.localeCompare(b.name)), [colleges]);
   const [name, setName] = useState(initial?.name || "");
-  const [college, setCollege] = useState(initial?.college_id || "");
+  const [college, setCollege] = useState(initial?.college_id || suggestedCollege || "");
   const [newName, setNewName] = useState("");
   const [newCity, setNewCity] = useState("");
   const [branch, setBranch] = useState(initial?.branch || "");

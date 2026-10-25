@@ -78,18 +78,18 @@ export default function LoginPage() {
 
   return (
     <div className="auth">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&display=swap" precedence="default" />
       <aside className="auth-side" aria-hidden="true">
+        <div className="auth-strip"><span>Den · sign-in desk</span><span>Free for every student</span></div>
         <Link href="/" className="auth-logo" tabIndex={-1}>Den<span>.</span></Link>
-        <div>
-          <p className="auth-side-big">The student hangout for every college in India.</p>
-          <ul>
-            <li><Icon name="book" size={18} /> Notes, PYQs and placement stories from your seniors</li>
-            <li><Icon name="ticket" size={18} /> Events with one-tap RSVP and QR passes</li>
-            <li><Icon name="mic" size={18} /> Live voice Spaces and debates</li>
-            <li><Icon name="shield" size={18} /> Verified students only</li>
-          </ul>
-        </div>
-        <small>Free for every student.</small>
+        <p className="auth-side-big">The student hangout for every college in India.</p>
+        <ul>
+          <li><Icon name="book" size={18} /> Notes, PYQs and placement stories from your seniors</li>
+          <li><Icon name="ticket" size={18} /> Events with one-tap RSVP and QR passes</li>
+          <li><Icon name="mic" size={18} /> Live voice Spaces and debates</li>
+          <li><Icon name="shield" size={18} /> Verified students only</li>
+        </ul>
+        <p className="auth-note">college email = blue tick straight away ✓</p>
       </aside>
 
       <main className="auth-main">

@@ -5,7 +5,7 @@
   --saffron: #F4A340; --saffron-soft: #FDF0DC; --saffron-ink: #8A5410;
   --leaf: #2F8F5B; --leaf-soft: #E1F2E8; --rose: #C9485F; --rose-soft: #F8E3E7;
   --scrim: rgba(23, 32, 51, .5); --shadow: 0 6px 18px rgba(23, 32, 51, .22);
-  --display: 'Bricolage Grotesque', ui-rounded, 'Segoe UI', system-ui, sans-serif;
+  --display: 'Fraunces', Georgia, 'Times New Roman', serif;
   --body: 'Hind', 'Segoe UI', system-ui, -apple-system, sans-serif;
   color-scheme: light;
 }
@@ -45,7 +45,7 @@ button:disabled { cursor: default; }
 /* Top bar */
 .top { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--paper) 86%, transparent); -webkit-backdrop-filter: saturate(1.6) blur(14px); backdrop-filter: saturate(1.6) blur(14px); border-bottom: 1px solid var(--hair); padding-top: env(safe-area-inset-top, 0px); }
 .bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 58px; }
-.brand { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: -.02em; white-space: nowrap; text-decoration: none; }
+.brand { font-family: var(--display); font-weight: 900; font-size: 24px; letter-spacing: -.035em; white-space: nowrap; text-decoration: none; }
 .brand span { color: var(--saffron); }
 .acts { display: flex; gap: 8px; align-items: center; }
 .icon-btn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; width: 38px; height: 38px; display: grid; place-items: center; position: relative; text-decoration: none; flex: none; }
@@ -671,23 +671,23 @@ html.theme-fade, html.theme-fade * { transition: background-color .3s ease, colo
 .emoji-box.inline { min-height: 280px; }
 .emoji-box.inline em-emoji-picker { height: 280px; width: 100%; border-radius: 0; }
 
-/* Sign-in page: brand panel on the left (laptops), the form on the right. */
-.auth { min-height: 100dvh; display: grid; grid-template-columns: minmax(340px, 44%) 1fr; }
-.auth-side { position: relative; overflow: hidden; background: #0E5E6F; color: #fff; padding: 40px 48px; display: flex; flex-direction: column; justify-content: space-between; gap: 40px; }
-.auth-side::after { content: ""; position: absolute; right: -70px; bottom: -70px; width: 240px; height: 240px; border-radius: 50%; border: 28px solid #F4A340; }
-.auth-logo { font-family: var(--display); font-weight: 800; font-size: 34px; letter-spacing: -.03em; text-decoration: none; color: #fff; }
+/* Sign-in page: a newspaper front page on the left (laptops), the form on the right. */
+.auth { min-height: 100dvh; display: grid; grid-template-columns: minmax(340px, 46%) 1fr; }
+.auth-side { position: relative; overflow: hidden; background: var(--np-paper); color: var(--np-ink); padding: 34px 44px; display: flex; flex-direction: column; gap: 26px; border-right: 1px solid var(--np-line); }
+.auth-strip { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--np-muted); border-bottom: 1px solid var(--np-ink); padding-bottom: 8px; }
+.auth-logo { font-family: var(--display); font-weight: 900; font-size: clamp(76px, 8vw, 116px); line-height: .86; letter-spacing: -.045em; text-decoration: none; color: var(--np-ink); text-align: center; }
 .auth-logo span, .auth-back span { color: var(--saffron); }
-.auth-side-big { font-family: var(--display); font-weight: 800; font-size: clamp(32px, 3.4vw, 46px); line-height: 1.02; letter-spacing: -.03em; margin: 0 0 28px; max-width: 12em; text-wrap: balance; }
-.auth-side ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; font-size: 16px; max-width: 26em; position: relative; z-index: 1; }
-.auth-side li { display: flex; gap: 12px; align-items: flex-start; opacity: .92; }
-.auth-side li svg { flex: none; margin-top: 3px; color: #F6C27C; }
-.auth-side small { opacity: .7; position: relative; z-index: 1; }
+.auth-side-big { font-family: var(--display); font-weight: 800; font-size: clamp(28px, 2.8vw, 38px); line-height: 1.08; letter-spacing: -.02em; margin: 0; padding-top: 14px; border-top: 3px double var(--np-ink); text-wrap: balance; }
+.auth-side ul { list-style: none; padding: 0; margin: 0; display: grid; font-size: 16px; }
+.auth-side li { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--np-line); }
+.auth-side li svg { flex: none; margin-top: 3px; color: var(--np-teal); }
+.auth-note { font-family: 'Kalam', 'Comic Sans MS', cursive; color: var(--np-pen); font-size: 22px; transform: rotate(-3deg); margin-top: auto; }
 .auth-main { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 22px; }
-.auth-back { display: none; align-items: center; gap: 6px; font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: -.02em; text-decoration: none; align-self: flex-start; }
+.auth-back { display: none; align-items: center; gap: 6px; font-family: var(--display); font-weight: 900; font-size: 26px; letter-spacing: -.03em; text-decoration: none; align-self: flex-start; }
 .auth-back svg { color: var(--muted); }
-.auth-back b { font-weight: 800; }
+.auth-back b { font-weight: 900; }
 .auth-card { width: 100%; max-width: 420px; }
-.auth-card h1 { font-family: var(--display); font-weight: 800; font-size: clamp(34px, 8vw, 42px); letter-spacing: -.03em; line-height: 1; margin: 0 0 10px; }
+.auth-card h1 { font-family: var(--display); font-weight: 800; font-size: clamp(36px, 8vw, 46px); letter-spacing: -.03em; line-height: 1; margin: 0 0 10px; }
 .auth-sub { color: var(--muted); margin: 0 0 24px; text-wrap: pretty; }
 .auth-card .field small { display: inline-flex; gap: 5px; align-items: center; color: var(--leaf); }
 .auth-alt { align-self: center; }
@@ -701,3 +701,20 @@ html.theme-fade, html.theme-fade * { transition: background-color .3s ease, colo
   .auth-back { display: inline-flex; margin-bottom: 18px; }
   .auth-card { max-width: 460px; align-self: center; }
 }
+
+/* Newspaper tokens: the landing page, the sign-in page and pen touches inside the app. */
+:root {
+  --np-paper: #F4EFE4; --np-card: #FBF8F1; --np-sheet: #FFFEF8; --np-ink: #1B1A17; --np-muted: #5B574D; --np-line: #CBC1AD;
+  --np-rule: #C6D5EA; --np-margin: #E7949A; --np-pen: #1E3A9E; --np-red: #B42D38; --np-teal: #0E5E6F; --np-kick: #9A520D;
+  --np-chai: rgba(150, 100, 40, .16); --np-fold: rgba(0, 0, 0, .06);
+  --hand: 'Kalam', 'Comic Sans MS', cursive;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --np-paper: #15191D; --np-card: #1C2227; --np-sheet: #1A2026; --np-ink: #ECE6D8; --np-muted: #ABA496; --np-line: #3A4046;
+  --np-rule: #2C3A4A; --np-margin: #7A3A40; --np-pen: #C3D2FF; --np-red: #FF8A92; --np-teal: #7FC8D6; --np-kick: #F0B060;
+  --np-chai: rgba(230, 190, 130, .10); --np-fold: rgba(255, 255, 255, .05); } }
+:root[data-theme="dark"] {
+  --np-paper: #15191D; --np-card: #1C2227; --np-sheet: #1A2026; --np-ink: #ECE6D8; --np-muted: #ABA496; --np-line: #3A4046;
+  --np-rule: #2C3A4A; --np-margin: #7A3A40; --np-pen: #C3D2FF; --np-red: #FF8A92; --np-teal: #7FC8D6; --np-kick: #F0B060;
+  --np-chai: rgba(230, 190, 130, .10); --np-fold: rgba(255, 255, 255, .05); }
+
