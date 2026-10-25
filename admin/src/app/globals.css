@@ -162,3 +162,7 @@ dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
   .nav-foot a { display: none; }
   .brand { font-size: 21px; }
 }
+.progress { height: 12px; border-radius: 99px; background: var(--chip); overflow: hidden; margin-bottom: 8px; }
+.progress i { display: block; height: 100%; background: var(--teal); transition: width .3s ease; }
+.big { display: block; font-family: var(--display); font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.bad-msg { background: var(--rose-soft, #f8e3e7); color: var(--rose); }

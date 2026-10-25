@@ -13,7 +13,7 @@ import PolicyLinks from "@/components/PolicyLinks";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default function MePage() {
-  const { me, colleges, collegeName } = useApp();
+  const { me, colleges, college, collegeName } = useApp();
   const router = useRouter();
   const toast = useToast();
   const supabase = supabaseBrowser();
@@ -122,7 +122,7 @@ export default function MePage() {
 
       {editing && (
         <Sheet title="Edit profile" onClose={() => setEditing(false)}>
-          <ProfileForm userId={me.id} colleges={colleges} initial={me} onDone={() => setEditing(false)} />
+          <ProfileForm userId={me.id} initial={me} initialCollege={college(me.college_id) || null} suggestions={colleges} onDone={() => setEditing(false)} />
         </Sheet>
       )}
     </main>

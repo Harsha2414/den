@@ -12,9 +12,10 @@ export const revalidate = 3600;
 
 async function loadColleges(): Promise<EditionCollege[]> {
   try {
-    // Only public columns. College names are shown to visitors before they sign in.
-    const { data } = await supabaseAdmin().from("colleges").select("id,name,city").order("name").limit(5000);
-    return (data || []) as EditionCollege[];
+    // Suggestions before typing: colleges that already have students. Typing searches all of India.
+    const { data, error } = await supabaseAdmin().rpc("active_colleges");
+    if (error) return [];
+    return ((data || []) as EditionCollege[]).slice(0, 8);
   } catch {
     return [];
   }
