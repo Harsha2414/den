@@ -3,7 +3,7 @@
   --bg: #F6F8F9; --surface: #FFFFFF; --ink: #172033; --muted: #566274; --line: #DDE3E8; --hair: #EDF0F3; --chip: #F1F4F6;
   --teal: #0E5E6F; --teal-soft: #DCEBEE; --saffron: #F4A340; --saffron-soft: #FDF0DC; --saffron-ink: #8A5410;
   --leaf: #2F8F5B; --leaf-soft: #E1F2E8; --rose: #C9485F; --rose-soft: #F8E3E7;
-  --display: 'Bricolage Grotesque', ui-rounded, system-ui, sans-serif; --body: 'Hind', system-ui, sans-serif;
+  --display: 'Fraunces', Georgia, 'Times New Roman', serif; --body: 'Hind', system-ui, sans-serif;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
