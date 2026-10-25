@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { REMEMBER_COOKIE, withRemember } from "@/lib/remember";
 
 export async function supabaseServer() {
   const cookieStore = await cookies();
@@ -11,7 +12,7 @@ export async function supabaseServer() {
         getAll: () => cookieStore.getAll(),
         setAll: (list) => {
           try {
-            list.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+            list.forEach(({ name, value, options }) => cookieStore.set(name, value, withRemember(options, cookieStore.get(REMEMBER_COOKIE)?.value)));
           } catch {
             // Called from a Server Component: the middleware refreshes the session instead.
           }

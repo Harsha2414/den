@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/format";
 import PolicyLinks from "./PolicyLinks";
+import { clearRememberChoice } from "@/lib/remember";
 
 /** One-time screen for accounts created before the terms existed. */
 export default function TermsGate({ userId }: { userId: string }) {
@@ -23,7 +24,7 @@ export default function TermsGate({ userId }: { userId: string }) {
   }
 
   async function signOut() {
-    await supabaseBrowser().auth.signOut();
+    await supabaseBrowser().auth.signOut(); clearRememberChoice();
     router.replace("/login");
     router.refresh();
   }
