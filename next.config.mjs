@@ -11,6 +11,10 @@ const nextConfig = {
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         { key: "Permissions-Policy", value: "camera=(self), geolocation=(), microphone=(self)" },
       ],
+    }, {
+      // The college list file has a version in its name, so browsers can keep it for a year.
+      source: "/data/:file*",
+      headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
     }];
   },
 };

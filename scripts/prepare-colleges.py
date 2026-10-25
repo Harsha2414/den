@@ -140,10 +140,10 @@ def main(src, dst):
             if place:
                 al.add(f"{short} {place}")
             al.add(short)
-        flat = re.sub(r"[^a-z0-9]", "", lname)
+        flats = [re.sub(r"[^a-z0-9]", "", x) for x in [lname, *c["other"]]]
         for key, names in FAMOUS:
             k = re.sub(r"[^a-z0-9]", "", key)
-            if flat == k or (flat.startswith(k) and c["kind"] == "university" and len(flat) - len(k) <= 12):
+            if any(f == k or (f.startswith(k) and c["kind"] == "university" and len(f) - len(k) <= 12) for f in flats):
                 al.update(names); famous = 1
         al = sorted(a for a in al if a and a != lname)[:10]
         out.append([c["code"], c["name"], c["district"], c["state"], c["kind"], al, famous])
