@@ -183,7 +183,7 @@ export default function Landing({ colleges }: { colleges: EditionCollege[] }) {
               fest passes, live voice rooms and a feed shared by students across the country.
             </p>
             <div className="np-ctas" ref={heroCta}>
-              <Link href="/login" className="np-btn np-btn-ink">{joinLabel}</Link>
+              <Link href="/signup" className="np-btn np-btn-ink">{joinLabel}</Link>
               <a href="#exam" className="np-btn np-btn-line">Take today’s paper</a>
               <span className="hand np-cta-note">← free, students only</span>
             </div>
@@ -264,7 +264,7 @@ export default function Landing({ colleges }: { colleges: EditionCollege[] }) {
               {passed ? (
                 <>
                   <div className="np-stamp np-stamp-in"><b>PASSED</b><span>TOTAL 100 / 100</span></div>
-                  <Link href="/login" className="np-btn np-btn-red">Collect your result: join Den</Link>
+                  <Link href="/signup" className="np-btn np-btn-red">Collect your result: join Den</Link>
                 </>
               ) : (
                 <span className="hand np-muted">{answered === 0 ? "answer all three to see your result →" : `${correct} of 3 correct so far…`}</span>
@@ -385,7 +385,7 @@ export default function Landing({ colleges }: { colleges: EditionCollege[] }) {
           <div className="np-kicker">Admission is free</div>
           <h2>{ed ? `${ed} is waiting.` : "Your college is waiting."}</h2>
           <p className="hand">no exam needed, promise :)</p>
-          <Link href="/login" className="np-btn np-btn-paper">{joinLabel}</Link>
+          <Link href="/signup" className="np-btn np-btn-paper">{joinLabel}</Link>
         </section>
 
         <footer className="np-foot">
@@ -396,7 +396,7 @@ export default function Landing({ colleges }: { colleges: EditionCollege[] }) {
 
       <div className={`np-bar ${showBar ? "show" : ""}`} aria-hidden={!showBar}>
         <span className="np-bar-logo">Den<span>.</span></span>
-        <Link href="/login" className="np-btn np-btn-ink" tabIndex={showBar ? 0 : -1}>{joinLabel} →</Link>
+        <Link href="/signup" className="np-btn np-btn-ink" tabIndex={showBar ? 0 : -1}>{joinLabel} →</Link>
       </div>
     </div>
   );
