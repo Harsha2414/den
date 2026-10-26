@@ -6,6 +6,7 @@ import { YEARS, friendlyError, nameProblem } from "@/lib/format";
 import type { Profile } from "@/lib/types";
 import Field from "./Field";
 import CollegeSearch, { placeOf, searchColleges, type CollegeHit } from "./CollegeSearch";
+import CourseSearch from "./CourseSearch";
 
 function slug(s: string) {
   const base = s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 44) || "college";
@@ -120,7 +121,7 @@ export default function ProfileForm({ userId, initial, onDone, initialCollege, s
         )}
         {initial && picked && picked.id !== initial.college_id && <small>Changing college moves you to that college&rsquo;s home page. Your old posts stay where they were.</small>}
       </div>
-      <Field id="pf-branch" f={{ key: "branch", label: "Branch / course", type: "text", required: true, placeholder: "CSE, Mechanical, BCom, MBA...", max: 60 }} value={branch} onChange={setBranch} />
+      <CourseSearch id="pf-branch" value={branch} onChange={setBranch} />
       <Field id="pf-year" f={{ key: "year", label: "Year", type: "select", options: YEARS }} value={year} onChange={setYear} />
       {initial && <Field id="pf-bio" f={{ key: "bio", label: "About you", type: "textarea", placeholder: "Clubs, interests, what you can help juniors with", max: 300 }} value={bio} onChange={setBio} />}
       {!initial && (
