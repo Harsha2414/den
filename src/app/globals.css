@@ -745,3 +745,5 @@ html.theme-fade, html.theme-fade * { transition: background-color .3s ease, colo
 .remember input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--teal); flex: none; }
 .remember span { display: grid; gap: 2px; }
 .remember small { color: var(--muted); font-size: 13px; line-height: 1.4; }
+.pf-names { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+@media (max-width: 360px) { .pf-names { grid-template-columns: 1fr; } }

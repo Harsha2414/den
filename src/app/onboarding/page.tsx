@@ -22,7 +22,17 @@ export default async function OnboardingPage() {
     <main className="onb">
       <h1>Welcome<span>to Den.</span></h1>
       <p>Tell students who you are. You can change this later from your profile.</p>
-      <ProfileForm userId={user.id} initialCollege={(chosen as CollegeHit | null) || null} suggestions={((active as CollegeHit[] | null) || []).slice(0, 8)} />
+      <ProfileForm userId={user.id} suggestedName={nameFromAccount(user.user_metadata)} initialCollege={(chosen as CollegeHit | null) || null} suggestions={((active as CollegeHit[] | null) || []).slice(0, 8)} />
     </main>
   );
+}
+
+/** Google gives a first name (given_name) and last name (family_name); email sign-ins have none. */
+function nameFromAccount(meta: Record<string, unknown> | undefined) {
+  const s = (v: unknown) => (typeof v === "string" ? v.trim().slice(0, 30) : "");
+  const first = s(meta?.given_name), last = s(meta?.family_name);
+  if (first || last) return { first, last };
+  const full = s(meta?.full_name) || s(meta?.name);
+  const i = full.indexOf(" ");
+  return full ? (i < 0 ? { first: full, last: "" } : { first: full.slice(0, i), last: full.slice(i + 1) }) : undefined;
 }
