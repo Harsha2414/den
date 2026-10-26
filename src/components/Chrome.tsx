@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback, createContext, useContext, type React
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { useApp } from "./AppContext";
 import CollegeSearch from "./CollegeSearch";
+import { useToast } from "./Toast";
 import Icon, { VerifiedTick, type IconName } from "./Icon";
 import Avatar from "./Avatar";
 import ThemeToggle from "./ThemeToggle";
@@ -71,6 +72,13 @@ export function ChromeShell({ children }: { children: ReactNode }) {
 
   // Close the drawer and switch on every page change.
   const query = useSearchParams().toString();
+  const toast = useToast();
+  // Came from "Sign up with Google" with an account that already existed (the sign-in callback leaves a short cookie).
+  useEffect(() => {
+    if (!document.cookie.split("; ").includes("den_existing=1")) return;
+    document.cookie = "den_existing=; path=/; max-age=0";
+    toast("You already have a Den account, so we signed you in.");
+  }, [toast]);
   useEffect(() => { setMenu(false); setSwitcher(false); }, [path, query]);
 
   useEffect(() => { ensureCollege(scope); }, [scope, ensureCollege]);

@@ -26,6 +26,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
   const [next, setNext] = useState("/");
   const [remember, setRemember] = useState(true);
   const [noAccount, setNoAccount] = useState(false);
+  const [hasAccount, setHasAccount] = useState(false);
   const [expired, setExpired] = useState(false);
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
@@ -40,6 +41,8 @@ export default function AuthForm({ mode }: { mode: Mode }) {
     // Remember the page they came for; the sign-in callback reads this and sends them there.
     document.cookie = `den_next=${encodeURIComponent(next)}; path=/; max-age=600; samesite=lax`;
     setRememberChoice(remember);
+    // Lets the sign-in callback tell a student who pressed "Sign up" that they already had an account.
+    document.cookie = `den_auth_mode=${mode}; path=/; max-age=600; samesite=lax`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       // Always show Google's account chooser, so nobody is signed in to Den without picking an account.
@@ -53,7 +56,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
     e.preventDefault();
     const addr = email.trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(addr)) return setErr("Enter a valid email address.");
-    setBusy(true); setErr(""); setNoAccount(false);
+    setBusy(true); setErr(""); setNoAccount(false); setHasAccount(false);
     let allowed = looksAcademic(addr);
     if (!allowed) {
       const { data } = await supabase.rpc("check_signup_email", { p_email: addr });
@@ -62,6 +65,11 @@ export default function AuthForm({ mode }: { mode: Mode }) {
     if (!allowed) {
       setBusy(false);
       return setErr("Email codes work only with college emails (like name@college.ac.in). Use Google sign-in instead, or ask us to add your college's email domain.");
+    }
+    // Signing up with an email that already has a Den account: point to Sign in instead of quietly signing in.
+    if (signup) {
+      const { data: exists } = await supabase.rpc("email_has_account", { p_email: addr });
+      if (exists === true) { setBusy(false); setEmail(addr); setHasAccount(true); return; }
     }
     // Sign in only works for existing accounts; sign up creates one.
     const { error } = await supabase.auth.signInWithOtp({ email: addr, options: { shouldCreateUser: signup } });
@@ -118,6 +126,9 @@ export default function AuthForm({ mode }: { mode: Mode }) {
             {deletedNotice && <p className="notice">Your account has been deleted. Thanks for being part of Den.</p>}
             {expired && <p className="notice">You were signed out because &ldquo;Keep me signed in&rdquo; was off. Sign in again to carry on.</p>}
             {err && <p className="err" role="alert">{err}</p>}
+            {hasAccount && (
+              <p className="notice" role="alert"><b>{email}</b> already has a Den account. <Link href={`/login${next !== "/" ? `?next=${encodeURIComponent(next)}` : ""}`}>Sign in instead</Link>.</p>
+            )}
             {noAccount && (
               <p className="notice" role="alert">There&rsquo;s no Den account for <b>{email.trim().toLowerCase()}</b> yet. <Link href={`/signup${next !== "/" ? `?next=${encodeURIComponent(next)}` : ""}`}>Create your account</Link> with it instead.</p>
             )}
