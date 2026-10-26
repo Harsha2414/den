@@ -42,3 +42,17 @@ export function safeNext(v: string | null | undefined): string {
   if (!v) return "/";
   return /^\/(?![\/\\])[^\s]*$/.test(v) && !v.startsWith("/login") && !v.startsWith("/auth") ? v : "/";
 }
+
+/**
+ * What's wrong with a first or last name, or "" if it's fine.
+ * Letters from any language plus spaces, dots, apostrophes and hyphens (same idea as public.looks_like_name).
+ */
+export function nameProblem(part: string, label: string): string {
+  const t = part.trim();
+  if (!t) return `Add your ${label}.`;
+  if (/\d/.test(t)) return `Your ${label} can't have numbers.`;
+  if (/\p{Extended_Pictographic}/u.test(t)) return `Your ${label} can't have emoji.`;
+  if (!/^[\p{L}\p{M}][\p{L}\p{M} .'’-]*$/u.test(t)) return `Your ${label} can only have letters, spaces, dots ( . ), apostrophes ( ' ) and hyphens ( - ).`;
+  if (/[.'’-]{3,}/.test(t)) return `That doesn't look like a real ${label}.`;
+  return "";
+}

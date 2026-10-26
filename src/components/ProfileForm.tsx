@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { YEARS, friendlyError } from "@/lib/format";
+import { YEARS, friendlyError, nameProblem } from "@/lib/format";
 import type { Profile } from "@/lib/types";
 import Field from "./Field";
 import CollegeSearch, { placeOf, searchColleges, type CollegeHit } from "./CollegeSearch";
@@ -55,8 +55,11 @@ export default function ProfileForm({ userId, initial, onDone, initialCollege, s
   async function save(e: React.FormEvent) {
     e.preventDefault();
     const name = `${firstName.trim()} ${lastName.trim()}`.trim().replace(/\s+/g, " ");
-    if (!firstName.trim()) return setErr("Add your first name to continue.");
-    if (!lastName.trim()) return setErr("Add your last name to continue. If you only have one name, add it in both boxes or use an initial.");
+    const badFirst = nameProblem(firstName, "first name");
+    if (badFirst) return setErr(badFirst);
+    const badLast = nameProblem(lastName, "last name");
+    if (badLast) return setErr(lastName.trim() ? badLast : "Add your last name. If you only have one name, add it in both boxes or use an initial.");
+    if (name.replace(/[\s.'’-]/g, "").length < 2) return setErr("Add your full name, as your classmates know you.");
     if (!branch.trim()) return setErr("Add your branch or course to continue.");
     if (!picked && !adding) return setErr("Find your college, or add it if it isn't listed.");
     if (!initial && !agreed) return setErr("Confirm you're 18 or older and agree to the terms to continue.");
@@ -73,7 +76,7 @@ export default function ProfileForm({ userId, initial, onDone, initialCollege, s
       ? await supabase.from("profiles").update(row).eq("id", userId)
       : await supabase.from("profiles").insert({ id: userId, ...row, terms_accepted_at: new Date().toISOString() });
     setBusy(false);
-    if (error) return setErr(friendlyError(error, "Couldn't save your profile. Try again."));
+    if (error) return setErr(/profiles_name_looks_real/.test(error.message) ? "Use your real name: letters only, no numbers or symbols." : friendlyError(error, "Couldn't save your profile. Try again."));
     if (onDone) onDone();
     router.replace(initial ? "/me" : `/c/${collegeId}`);
     router.refresh();
