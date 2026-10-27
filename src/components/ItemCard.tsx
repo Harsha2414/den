@@ -9,6 +9,8 @@ import Icon, { VerifiedTick } from "./Icon";
 import Comments from "./Comments";
 import Avatar from "./Avatar";
 import { MediaView } from "./Media";
+import { useToast } from "./Toast";
+import { shareLink } from "@/lib/share";
 
 export interface CardActions {
   onLike?: () => void;
@@ -17,12 +19,15 @@ export interface CardActions {
   onToggleSold?: () => void;
 }
 
-export default function ItemCard({ type, item, likes, liked, showCollege, actions }: {
+export default function ItemCard({ type, item, likes, liked, showCollege, actions, openComments = false }: {
   type: SectionKey; item: AnyItem; likes: number; liked: boolean; showCollege: boolean; actions: CardActions;
+  /** Start with the comments showing (the post's own page). */
+  openComments?: boolean;
 }) {
   const { me, collegeName } = useApp();
   const [confirm, setConfirm] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(openComments);
+  const toast = useToast();
   const [commentCount, setCommentCount] = useState<number>(
     type === "posts" ? ((item as Post).comments?.[0]?.count ?? 0) : 0,
   );
@@ -63,10 +68,10 @@ export default function ItemCard({ type, item, likes, liked, showCollege, action
             <span className="post-who">
               <Link href={`/u/${item.author_id}`}><b>{a?.name || "Student"}</b></Link>{a?.verified && <VerifiedTick />}
               {[a?.branch, a?.year?.replace(" year", " yr"), showCollege ? collegeName(item.college_id) : "", timeAgo(item.created_at).replace(" ago", "")].filter(Boolean).map((x) => <span key={x}> · {x}</span>)}
-              {p.kind && p.kind !== "General" && <span className="post-kind"> · {p.kind}</span>}
             </span>
             {menuBtn}
           </div>
+          {p.kind && p.kind !== "General" && <span className={`kind-tag k-${p.kind.toLowerCase().replace(/[^a-z]+/g, "-")}`}>{p.kind}</span>}
           {p.body && <div className="body">{p.body}</div>}
           {!!p.media?.length && <MediaView items={p.media} className="post-media" />}
           <div className="post-acts">
@@ -76,6 +81,11 @@ export default function ItemCard({ type, item, likes, liked, showCollege, action
             <button className="ghost" onClick={() => setOpen(!open)} aria-expanded={open} aria-label={`Comments${commentCount ? `, ${commentCount}` : ""}`}>
               <Icon name="msg" size={17} /> {commentCount || ""}
             </button>
+            <button className="ghost" aria-label="Share" onClick={async () => {
+              const r = await shareLink(`${window.location.origin}/p/${item.id}`, `${a?.name || "A student"} on Den`, p.body?.slice(0, 120) || "");
+              if (r === "copied") toast("Link copied. Paste it in WhatsApp or anywhere.");
+              else if (r === "failed") toast("Couldn't share. Try again.");
+            }}><Icon name="share" size={17} /></button>
             {!showCollege && p.visibility === "india" && <span className="post-scope" title="Shared with every college"><Icon name="globe" size={13} /> All India</span>}
           </div>
           {open && <Comments postId={item.id} onCount={setCommentCount} />}

@@ -79,6 +79,18 @@ You tested these yourself on the live site:
 
 **Problems you found on the live site:** "site url is improperly formatted" and "requested path is invalid". Both were Supabase address settings, which you fixed.
 
+### Day 3: home page (27 October)
+
+| Feature | What was tested |
+|---|---|
+| **Feed with 41 posts** | Scrolled to the end on a phone. Posts load 20 at a time, only visible posts are drawn, and "You're all caught up" shows at the end. |
+| **Filter chips** | Doubts and Hostel life show only those posts, each with its coloured tag. |
+| **New posts button** | Shows "↑ 3 new posts" when posts arrive, and refreshes and scrolls to the top when tapped. |
+| **Post page and share** | `/p/<id>` opens with comments showing. A missing or private post says "This post isn't available". |
+| **Empty colleges** | Your own college shows "Start … on Den" with Write the first post and the WhatsApp invite. Another college shows "Nobody from … has posted yet". |
+| **Laptop** | The Happening column with events, notes and the invite card, in light and dark mode. |
+| **Demo posts script** | Run on a full test copy of the database with all 10 migrations: 12 demo students, 40 posts, 100 comments, 224 likes and 3 events. The remove script deletes all of it, including your own likes and comments on demo posts, and leaves real students and posts alone. |
+
 ## Still to test before launch
 
 | What | When |

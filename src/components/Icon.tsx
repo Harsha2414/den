@@ -49,7 +49,8 @@ const P: Record<string, string> = {
   pen: '<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
   article: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/>',
   ticket: '<path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M14 6v12" stroke-dasharray="2 2"/>',
-  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>',
+  gear: '<path d="M21.41 10.09 L21.41 13.91 L18.57 14.94 L18.72 14.57 L20.00 17.30 L17.30 20.00 L14.57 18.72 L14.94 18.57 L13.91 21.41 L10.09 21.41 L9.06 18.57 L9.43 18.72 L6.70 20.00 L4.00 17.30 L5.28 14.57 L5.43 14.94 L2.59 13.91 L2.59 10.09 L5.43 9.06 L5.28 9.43 L4.00 6.70 L6.70 4.00 L9.43 5.28 L9.06 5.43 L10.09 2.59 L13.91 2.59 L14.94 5.43 L14.57 5.28 L17.30 4.00 L20.00 6.70 L18.72 9.43 L18.57 9.06 Z" stroke-linejoin="round"/><circle cx="12" cy="12" r="3"/>',
+  share: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.5"/><path d="m8.2 13.2 7.6 4.5"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7"/><path d="M12 17h.01"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
 };

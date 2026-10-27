@@ -201,6 +201,10 @@ All rules live in the database (row-level security), so they hold even if someon
 - The **Digital Personal Data Protection Act, 2023** requires verifiable parental consent for users under 18. Some first-year students may be 17.
 - Publish a privacy policy and community guidelines. Get advice from a lawyer before launch; this README isn't legal advice.
 
+## Demo posts for testing
+
+To see a busy feed, run `supabase/demo/add-demo-posts.sql` in the Supabase SQL Editor. It adds 12 demo students (emails ending in `@den-demo.ac.in`) to your college with 40 posts, comments, likes and 3 events. `supabase/demo/remove-demo-posts.sql` removes all of it again.
+
 ## Project documents
 
 Den's overview and history, technical guide, design, testing and roadmap are Markdown files in `admin/content/docs/`. Den Admin shows them under **Docs**. Update them in the same branch as the change they describe.

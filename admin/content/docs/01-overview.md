@@ -56,6 +56,12 @@ Den is for students aged **18 and over** for now (see the Roadmap for 16–17).
 - Banned students see a "suspended" screen.
 
 **College homes and All India**
+- **Home page header**: the college name, how many students are on Den and how many posts came in today, and a "Ask a doubt, share campus news…" box to start a post.
+- **Happening at your college**: live Spaces, the next events and the newest notes. These are cards to swipe on phones and a column on the right on laptops, with an "Invite classmates" card.
+- **Filter chips** on the feed: All, Doubts, Announcements, Lost & found, Hostel life.
+- **"↑ New posts" button** when posts arrive while reading (checked every 40 seconds).
+- **First-post screen** for a college with no posts yet: "Start <college> on Den", with Write the first post and Invite classmates on WhatsApp.
+- **Share** on every post (the phone's share sheet, or copy link). Each post has its own page (`/p/<id>`) with comments open.
 - **Feed**: posts (General, Doubt, Announcement, Lost & found, Hostel life) with up to 4 photos, likes and comments. Each post is shown to *My college* or *All India*.
 - **Notes and PYQs**: upload PDF, Word, PowerPoint or Excel files, or a link.
 - **Placements**: interview and placement stories.
@@ -118,6 +124,7 @@ Den Admin is a separate website. Only accounts marked as admin can open it.
 | **24 Oct** | **Speed**: caching, lists that load 20 at a time, smooth scrolling. **Chat extras**: typing, online, reactions, emoji panel. Fixed messages appearing only after a refresh. We agreed the **10-day polish plan** for launch on 3 Nov. |
 | **24 Oct (Day 1)** | Eight landing page designs (A–H). You chose **H, newspaper + exam hall**, then edited it: removed both editor sections and rewrote the viva answers. Built it for real with one serif logo across Den and the newspaper sign-in and share card. Den Launch Desk tracker started. |
 | **25 Oct (Day 2)** | **Every college in India** (AISHE, 69,775), imported in Den Admin. **Keep me signed in** and the Google account chooser. **Instant college search** on the phone. **First and last name**. **Real-name rule**. **Course list** of 911 degrees. You decided to keep 18+ for now. |
+| **27 Oct (Day 3)** | Home page: college header and post box, Happening strip/column, filter chips, new-posts button, first-post screen, share and post pages, smaller laptop photos, cleaner switcher, gear icon. Demo posts script for testing. |
 | **26 Oct (Day 2)** | **Separate Sign in and Sign up pages**, and the **"already has an account"** notice. **These documents** added to Den Admin. |
 
 ### Decisions we made, and why

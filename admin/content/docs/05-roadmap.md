@@ -17,7 +17,7 @@ summary: Phase 1 (launch on 3 November), Phase 2 (the first months after launch)
 |---|---|---|
 | 1 | Landing page and sign-in | **Done**, except the club/fest section and "Be the first from your college" |
 | 2 | Sign-up and the college list | **Mostly done**: India college list, instant search, Keep me signed in, first and last name, real-name rule, course list, separate Sign in and Sign up, "already has an account". **Left:** profile step polish, a shorter 18+ agreement, a guided "Get your blue tick" step, and new students returning to the shared link |
-| 3 | Home feed, top bar and menu | To do |
+| 3 | Home feed, top bar and menu | **On preview**: header and post box, Happening, filter chips, new-posts button, first-post screen, share, post pages, photo sizes, switcher and menu fixes |
 | 4 | Posting, comments and profile pages | To do |
 | 5 | Messages polish | To do |
 | 6 | Events, Spaces and debates polish | To do |

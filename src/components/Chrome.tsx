@@ -193,7 +193,7 @@ function CollegeSwitch({ onClose }: { onClose: () => void }) {
           <CollegeSearch className="switch-search" placeholder="Search any college in India"
             suggestions={colleges.filter((c) => c.id !== me.college_id).slice(0, 6)}
             onPick={(c) => go(`/c/${c.id}`)} />
-          <Link href="/colleges" className="switch-browse" onClick={onClose}><Icon name="search" size={18} /> Browse colleges on Den</Link>
+          <Link href="/colleges" className="switch-browse" onClick={onClose}>Browse all colleges on Den <span aria-hidden="true">→</span></Link>
         </div>
       </div>
     </div>
