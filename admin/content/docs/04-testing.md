@@ -89,6 +89,9 @@ You tested these yourself on the live site:
 | **Post page and share** | `/p/<id>` opens with comments showing. A missing or private post says "This post isn't available". |
 | **Empty colleges** | Your own college shows "Start … on Den" with Write the first post and the WhatsApp invite. Another college shows "Nobody from … has posted yet". |
 | **Laptop** | The Happening column with events, notes and the invite card, in light and dark mode. |
+| **Reactions** | A real long-press on a phone opens the 6 reactions. Picking 🔥 switches your reaction, tapping again takes it back, and a tap gives a heart. The database refuses unknown reactions and changes to anyone else's reaction (migration 0011, tested on a full test database). |
+| **Saved posts** | Bookmark saves and unsaves. The Saved page lists your saved posts. Other students can't see what you saved, you can't save a post you can't see, and deleting a post removes it from Saved. |
+| **Comments** | Photo, name and time on top, with the comment underneath. |
 | **Demo posts script** | Run on a full test copy of the database with all 10 migrations: 12 demo students, 40 posts, 100 comments, 224 likes and 3 events. The remove script deletes all of it, including your own likes and comments on demo posts, and leaves real students and posts alone. |
 
 ## Still to test before launch

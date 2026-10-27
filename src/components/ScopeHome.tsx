@@ -20,6 +20,7 @@ import ReportSheet from "./ReportSheet";
 import Avatar from "./Avatar";
 import Happening from "./Happening";
 import { inviteMessage, whatsappLink } from "@/lib/share";
+import { groupLikes, nextLikes, NO_LIKES, type Likes } from "@/lib/reactions";
 
 const INDIA_TABS: SectionKey[] = ["posts", "notes", "placements", "events"];
 const COLLEGE_TABS: SectionKey[] = ["posts", "notes", "placements", "listings", "events"];
@@ -58,7 +59,8 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
   const tabs = india ? INDIA_TABS : COLLEGE_TABS;
   const [tab] = useState<SectionKey>(tabs.includes(initialTab as SectionKey) ? (initialTab as SectionKey) : "posts");
   const [searching, setSearching] = useState(false);
-  const [likeOver, setLikeOver] = useState<Record<string, { n: number; mine: boolean }>>({});
+  const [likeOver, setLikeOver] = useState<Record<string, Likes>>({});
+  const [savedOver, setSavedOver] = useState<Record<string, boolean>>({});
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [patched, setPatched] = useState<Record<string, Partial<AnyItem>>>({});
   const [query, setQuery] = useState("");
@@ -69,7 +71,7 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
   const qc = useQueryClient();
   const key = ["scope", scope, tab, kind] as const;
 
-  type Page = { rows: AnyItem[]; likes: Record<string, { n: number; mine: boolean }>; rsvps: Record<string, { going: number; mine: RsvpStatus | null }> };
+  type Page = { rows: AnyItem[]; likes: Record<string, Likes>; saved: string[]; rsvps: Record<string, { going: number; mine: RsvpStatus | null }> };
   const feed = useInfiniteQuery({
     queryKey: key,
     initialPageParam: 0,
@@ -86,12 +88,19 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
       if (err) throw new Error(friendlyError(err, "Couldn't load this page. Try again."));
       const rows = (data || []) as unknown as AnyItem[];
       const ids = rows.map((r) => r.id);
-      const likes: Page["likes"] = {};
+      let likes: Page["likes"] = {};
+      let saved: string[] = [];
       const rsvps: Page["rsvps"] = {};
       const likeType = LIKE_TYPE_OF[tab];
       if (likeType && ids.length) {
-        const { data: ls } = await supabase.from("likes").select("item_id,user_id").eq("item_type", likeType).in("item_id", ids);
-        (ls || []).forEach((l: { item_id: string; user_id: string }) => { const e = (likes[l.item_id] ||= { n: 0, mine: false }); e.n++; if (l.user_id === me.id) e.mine = true; });
+        const [{ data: ls, error: le }, sv] = await Promise.all([
+          supabase.from("likes").select(tab === "posts" ? "item_id,user_id,reaction" : "item_id,user_id").eq("item_type", likeType).in("item_id", ids),
+          tab === "posts" ? supabase.from("saved_posts").select("post_id").in("post_id", ids) : Promise.resolve({ data: [] }),
+        ]);
+        // Before migration 0011 there is no reaction column: read plain likes instead.
+        const rowsL = le && tab === "posts" ? (await supabase.from("likes").select("item_id,user_id").eq("item_type", likeType).in("item_id", ids)).data : ls;
+        likes = groupLikes((rowsL || []) as unknown as { item_id: string; user_id: string; reaction?: string }[], me.id);
+        saved = ((sv.data || []) as { post_id: string }[]).map((x) => x.post_id);
       }
       if (tab === "events" && ids.length) {
         const { data: rs } = await supabase.from("event_rsvps").select("event_id,user_id,status").in("event_id", ids);
@@ -101,17 +110,22 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
           if (x.user_id === me.id) e.mine = x.status;
         });
       }
-      return { rows, likes, rsvps };
+      return { rows, likes, saved, rsvps };
     },
   });
   const error = feed.error ? (feed.error as Error).message : "";
   const items = useMemo(() => feed.data
     ? feed.data.pages.flatMap((p) => p.rows).filter((r) => !removed.has(r.id)).map((r) => (patched[r.id] ? { ...r, ...patched[r.id] } as AnyItem : r))
     : null, [feed.data, removed, patched]);
-  const likeMap = useMemo(() => ({ ...Object.assign({}, ...(feed.data?.pages.map((p) => p.likes) || [])), ...likeOver }), [feed.data, likeOver]) as Record<string, { n: number; mine: boolean }>;
+  const likeMap = useMemo(() => ({ ...Object.assign({}, ...(feed.data?.pages.map((p) => p.likes) || [])), ...likeOver }), [feed.data, likeOver]) as Record<string, Likes>;
+  const savedSet = useMemo(() => {
+    const set = new Set(feed.data?.pages.flatMap((p) => p.saved || []) || []);
+    for (const [id, v] of Object.entries(savedOver)) { if (v) set.add(id); else set.delete(id); }
+    return set;
+  }, [feed.data, savedOver]);
   const rsvpMap = useMemo(() => Object.assign({}, ...(feed.data?.pages.map((p) => p.rsvps) || [])), [feed.data]) as Page["rsvps"];
   // Fresh data from the server replaces quick local changes.
-  useEffect(() => { setLikeOver({}); setPatched({}); }, [feed.dataUpdatedAt]);
+  useEffect(() => { setLikeOver({}); setPatched({}); setSavedOver({}); }, [feed.dataUpdatedAt]);
   const reload = () => qc.invalidateQueries({ queryKey: key });
 
   // The line under the college name: how many students, how many posts today. Only real numbers.
@@ -190,15 +204,28 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
     return items.filter((i) => (JSON.stringify(i) + " " + (i.author?.name || "")).toLowerCase().includes(q));
   }, [items, query]);
 
-  async function toggleLike(item: AnyItem) {
+  async function toggleLike(item: AnyItem, reaction?: string) {
     if (!gate("like posts")) return;
     const likeType = LIKE_TYPE_OF[tab]; if (!likeType) return;
-    const cur = likeMap[item.id] || { n: 0, mine: false };
-    setLikeOver((m) => ({ ...m, [item.id]: { n: cur.n + (cur.mine ? -1 : 1), mine: !cur.mine } }));
-    const res = cur.mine
-      ? await supabase.from("likes").delete().match({ user_id: me.id, item_type: likeType, item_id: item.id })
-      : await supabase.from("likes").insert({ item_type: likeType, item_id: item.id });
+    const cur = likeMap[item.id] || NO_LIKES;
+    const { next, op, reaction: r } = nextLikes(cur, tab === "posts" ? reaction : undefined);
+    setLikeOver((m) => ({ ...m, [item.id]: next }));
+    const match = { user_id: me.id, item_type: likeType, item_id: item.id };
+    const res = op === "delete" ? await supabase.from("likes").delete().match(match)
+      : op === "update" ? await supabase.from("likes").update({ reaction: r }).match(match)
+      : await supabase.from("likes").insert(r === "heart" ? { item_type: likeType, item_id: item.id } : { item_type: likeType, item_id: item.id, reaction: r });
     if (res.error) { setLikeOver((m) => ({ ...m, [item.id]: cur })); toast(friendlyError(res.error)); }
+  }
+
+  async function toggleSave(item: AnyItem) {
+    const was = savedSet.has(item.id);
+    setSavedOver((m) => ({ ...m, [item.id]: !was }));
+    const res = was
+      ? await supabase.from("saved_posts").delete().match({ user_id: me.id, post_id: item.id })
+      : await supabase.from("saved_posts").insert({ post_id: item.id });
+    if (res.error) { setSavedOver((m) => ({ ...m, [item.id]: was })); return toast(friendlyError(res.error, "Couldn't save that. Try again.")); }
+    toast(was ? "Removed from Saved" : "Saved. Find it in the menu under Saved posts.");
+    qc.invalidateQueries({ queryKey: ["saved"] });
   }
 
   async function remove(item: AnyItem) {
@@ -310,8 +337,11 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
             ) : (
               <div className={tab === "posts" ? "" : "vitem"}><ItemCard type={tab} item={item} showCollege={india}
                 likes={likeMap[item.id]?.n || 0} liked={!!likeMap[item.id]?.mine}
+                reactions={tab === "posts" ? likeMap[item.id] || NO_LIKES : undefined} saved={savedSet.has(item.id)}
                 actions={{
                   onLike: LIKE_TYPE_OF[tab] ? () => toggleLike(item) : undefined,
+                  onReact: tab === "posts" ? (r) => toggleLike(item, r) : undefined,
+                  onSave: tab === "posts" ? () => toggleSave(item) : undefined,
                   onDelete: () => remove(item),
                   onReport: () => setReporting(item.id),
                   onToggleSold: tab === "listings" ? () => toggleSold(item) : undefined,

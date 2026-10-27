@@ -11,6 +11,7 @@ import { useToast } from "@/components/Toast";
 import ItemCard from "@/components/ItemCard";
 import ReportSheet from "@/components/ReportSheet";
 import Icon from "@/components/Icon";
+import { groupLikes, nextLikes, NO_LIKES, type Likes } from "@/lib/reactions";
 
 /** One post on its own page: where a shared post link opens. */
 export default function PostPage({ params }: { params: Promise<{ id: string }> }) {
@@ -21,7 +22,8 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   const router = useRouter();
   const supabase = supabaseBrowser();
   const [post, setPost] = useState<Post | null | undefined>(undefined);
-  const [likes, setLikes] = useState({ n: 0, mine: false });
+  const [likes, setLikes] = useState<Likes>(NO_LIKES);
+  const [saved, setSaved] = useState(false);
   const [reporting, setReporting] = useState(false);
 
   useEffect(() => {
@@ -32,21 +34,33 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
       setPost((data as Post | null) || null);
       if (data) {
         ensureCollege((data as Post).college_id);
-        const { data: ls } = await supabase.from("likes").select("user_id").eq("item_type", "post").eq("item_id", id);
-        if (live) setLikes({ n: (ls || []).length, mine: (ls || []).some((l: { user_id: string }) => l.user_id === me.id) });
+        let { data: ls, error: le } = await supabase.from("likes").select("item_id,user_id,reaction").eq("item_type", "post").eq("item_id", id);
+        if (le) ({ data: ls } = await supabase.from("likes").select("item_id,user_id").eq("item_type", "post").eq("item_id", id));
+        const { data: sv } = await supabase.from("saved_posts").select("post_id").eq("post_id", id);
+        if (live) { setLikes(groupLikes((ls || []) as { item_id: string; user_id: string; reaction?: string }[], me.id)[id] || NO_LIKES); setSaved(!!sv?.length); }
       }
     })();
     return () => { live = false; };
   }, [id, me.id, supabase, ensureCollege]);
 
-  async function toggleLike() {
+  async function react(reaction?: string) {
     if (!gate("like posts")) return;
     const cur = likes;
-    setLikes({ n: cur.n + (cur.mine ? -1 : 1), mine: !cur.mine });
-    const res = cur.mine
-      ? await supabase.from("likes").delete().match({ user_id: me.id, item_type: "post", item_id: id })
-      : await supabase.from("likes").insert({ item_type: "post", item_id: id });
+    const { next, op, reaction: r } = nextLikes(cur, reaction);
+    setLikes(next);
+    const match = { user_id: me.id, item_type: "post", item_id: id };
+    const res = op === "delete" ? await supabase.from("likes").delete().match(match)
+      : op === "update" ? await supabase.from("likes").update({ reaction: r }).match(match)
+      : await supabase.from("likes").insert(r === "heart" ? { item_type: "post", item_id: id } : { item_type: "post", item_id: id, reaction: r });
     if (res.error) { setLikes(cur); toast(friendlyError(res.error)); }
+  }
+
+  async function toggleSave() {
+    const was = saved;
+    setSaved(!was);
+    const res = was ? await supabase.from("saved_posts").delete().match({ user_id: me.id, post_id: id }) : await supabase.from("saved_posts").insert({ post_id: id });
+    if (res.error) { setSaved(was); return toast(friendlyError(res.error, "Couldn't save that. Try again.")); }
+    toast(was ? "Removed from Saved" : "Saved. Find it in the menu under Saved posts.");
   }
 
   async function remove() {
@@ -72,8 +86,8 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
       )}
       {post && (
         <div className="feed">
-          <ItemCard type="posts" item={post} likes={likes.n} liked={likes.mine} showCollege={post.college_id !== me.college_id} openComments
-            actions={{ onLike: toggleLike, onDelete: remove, onReport: () => setReporting(true) }} />
+          <ItemCard type="posts" item={post} likes={likes.n} liked={likes.mine} reactions={likes} saved={saved} showCollege={post.college_id !== me.college_id} openComments
+            actions={{ onLike: () => react(), onReact: react, onSave: toggleSave, onDelete: remove, onReport: () => setReporting(true) }} />
         </div>
       )}
       {reporting && <ReportSheet targetType="post" targetId={id} onClose={() => setReporting(false)} />}

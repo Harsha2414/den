@@ -75,6 +75,9 @@ export default function MePage() {
       <Link className="card" href="/events?tab=going" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", color: "inherit", marginBottom: 8 }}>
         <Icon name="ticket" /><div style={{ flex: 1 }}><b>My events</b><div className="meta">Tickets, events you&rsquo;re going to, and ones you organise</div></div><span aria-hidden="true">›</span>
       </Link>
+      <Link className="card" href="/saved" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", color: "inherit", marginBottom: 8 }}>
+        <Icon name="bookmark" /><div style={{ flex: 1 }}><b>Saved posts</b><div className="meta">Posts you saved to read later. Only you can see them</div></div><span aria-hidden="true">›</span>
+      </Link>
       <Link className="card" href="/articles?tab=mine" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", color: "inherit", marginBottom: 8 }}>
         <Icon name="article" /><div style={{ flex: 1 }}><b>My articles</b><div className="meta">Your drafts and published articles</div></div><span aria-hidden="true">›</span>
       </Link>

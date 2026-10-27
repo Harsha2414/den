@@ -6,7 +6,8 @@ import { AUTHOR_COLS, friendlyError, timeAgo } from "@/lib/format";
 import type { Comment } from "@/lib/types";
 import { useApp } from "./AppContext";
 import { useToast } from "./Toast";
-import Icon from "./Icon";
+import Icon, { VerifiedTick } from "./Icon";
+import Avatar from "./Avatar";
 
 export default function Comments({ postId, onCount }: { postId: string; onCount: (n: number) => void }) {
   const { me, canAct } = useApp();
@@ -46,9 +47,15 @@ export default function Comments({ postId, onCount }: { postId: string; onCount:
         list.length === 0 ? <div className="meta">No comments yet.</div> :
         list.map((c) => (
           <div className="cmt" key={c.id}>
-            <Link href={`/u/${c.author_id}`}><b>{c.author?.name || "Student"}</b></Link> {c.body}
-            <span className="meta"> · {timeAgo(c.created_at)}</span>
-            {c.author_id === me.id && <button className="ghost" style={{ marginLeft: 6 }} onClick={() => remove(c.id)} aria-label="Delete comment"><Icon name="trash" size={13} /></button>}
+            <Link href={`/u/${c.author_id}`} className="cmt-av" aria-label={c.author?.name || "Student"}><Avatar id={c.author_id} name={c.author?.name} /></Link>
+            <div className="cmt-main">
+              <div className="cmt-head">
+                <Link href={`/u/${c.author_id}`}><b>{c.author?.name || "Student"}</b></Link>{c.author?.verified && <VerifiedTick />}
+                <span className="meta"> · {timeAgo(c.created_at).replace(" ago", "")}</span>
+                {c.author_id === me.id && <button className="ghost cmt-del" onClick={() => remove(c.id)} aria-label="Delete comment"><Icon name="trash" size={13} /></button>}
+              </div>
+              <div className="cmt-body">{c.body}</div>
+            </div>
           </div>
         ))}
       {!canAct ? <a className="link-btn" href="/verify" style={{ marginTop: 2 }}><Icon name="lock" size={14} /> Verify to comment</a> : <div className="inline">

@@ -126,6 +126,7 @@ Supabase runs PostgreSQL. Every change to it is a numbered SQL file that you run
 | `0008_college_list.sql` | The India college list: search, import, review, merge |
 | `0009_name_rules.sql` | Names must look like real names |
 | `0010_account_exists.sql` | Sign up can tell when an email already has an account |
+| `0011_reactions_saved.sql` | Reactions on posts, and saved posts (private to each student) |
 
 **Important database functions**
 - `search_colleges`, `active_colleges`: college search and the colleges that already have students.

@@ -237,6 +237,7 @@ function SideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const yours: Item[] = [
     { href: "/events?tab=going", label: "My events & tickets", icon: "ticket" },
     { href: "/articles?tab=mine", label: "My articles & drafts", icon: "article" },
+    { href: "/saved", label: "Saved posts", icon: "bookmark", on: path === "/saved" },
   ];
 
   const link = (it: Item) => (

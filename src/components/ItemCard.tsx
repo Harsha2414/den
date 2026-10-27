@@ -11,16 +11,25 @@ import Avatar from "./Avatar";
 import { MediaView } from "./Media";
 import { useToast } from "./Toast";
 import { shareLink } from "@/lib/share";
+import { NO_LIKES, type Likes } from "@/lib/reactions";
+import ReactButton from "./ReactButton";
 
 export interface CardActions {
   onLike?: () => void;
   onDelete: () => void;
   onReport: () => void;
   onToggleSold?: () => void;
+  /** Posts: react (undefined = tap the heart). */
+  onReact?: (reaction?: string) => void;
+  /** Posts: save or unsave. */
+  onSave?: () => void;
 }
 
-export default function ItemCard({ type, item, likes, liked, showCollege, actions, openComments = false }: {
+export default function ItemCard({ type, item, likes, liked, showCollege, actions, openComments = false, reactions, saved = false }: {
   type: SectionKey; item: AnyItem; likes: number; liked: boolean; showCollege: boolean; actions: CardActions;
+  /** Posts: likes with reactions. */
+  reactions?: Likes;
+  saved?: boolean;
   /** Start with the comments showing (the post's own page). */
   openComments?: boolean;
 }) {
@@ -75,9 +84,8 @@ export default function ItemCard({ type, item, likes, liked, showCollege, action
           {p.body && <div className="body">{p.body}</div>}
           {!!p.media?.length && <MediaView items={p.media} className="post-media" />}
           <div className="post-acts">
-            <button className={`ghost ${liked ? "on" : ""}`} onClick={actions.onLike} aria-pressed={liked} aria-label={`Like${likes ? `, ${likes}` : ""}`}>
-              <Icon name="heart" size={17} fill={liked} /> {likes || ""}
-            </button>
+            <ReactButton likes={reactions || { ...NO_LIKES, n: likes, mine: liked, my: liked ? "heart" : null, counts: likes ? { heart: likes } : {} }}
+              onReact={(r) => (actions.onReact ? actions.onReact(r) : actions.onLike?.())} />
             <button className="ghost" onClick={() => setOpen(!open)} aria-expanded={open} aria-label={`Comments${commentCount ? `, ${commentCount}` : ""}`}>
               <Icon name="msg" size={17} /> {commentCount || ""}
             </button>
@@ -86,6 +94,11 @@ export default function ItemCard({ type, item, likes, liked, showCollege, action
               if (r === "copied") toast("Link copied. Paste it in WhatsApp or anywhere.");
               else if (r === "failed") toast("Couldn't share. Try again.");
             }}><Icon name="share" size={17} /></button>
+            {actions.onSave && (
+              <button className={`ghost ${saved ? "on" : ""}`} aria-pressed={saved} aria-label={saved ? "Saved. Tap to remove" : "Save for later"} onClick={actions.onSave}>
+                <Icon name="bookmark" size={17} fill={saved} />
+              </button>
+            )}
             {!showCollege && p.visibility === "india" && <span className="post-scope" title="Shared with every college"><Icon name="globe" size={13} /> All India</span>}
           </div>
           {open && <Comments postId={item.id} onCount={setCommentCount} />}
