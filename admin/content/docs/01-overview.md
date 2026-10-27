@@ -63,7 +63,7 @@ Den is for students aged **18 and over** for now (see the Roadmap for 16–17).
 - **First-post screen** for a college with no posts yet: "Start <college> on Den", with Write the first post and Invite classmates on WhatsApp.
 - **Reactions**: tap the heart to like; long-press it (or right-click on a laptop) for ❤️ 😂 😮 😢 🔥 👏. The top reactions show next to the count.
 - **Save posts** with the bookmark. **Saved posts** (in the menu and on Profile) lists them, and only you can see it.
-- **Comments** show the commenter's photo and name, with the comment underneath.
+- **Comments** show the commenter's photo and name, with the comment underneath. **Reply** under any comment: replies sit indented under it and start with @Name. Long threads fold to the last two replies.
 - **Share** on every post (the phone's share sheet, or copy link). Each post has its own page (`/p/<id>`) with comments open.
 - **Feed**: posts (General, Doubt, Announcement, Lost & found, Hostel life) with up to 4 photos, likes and comments. Each post is shown to *My college* or *All India*.
 - **Notes and PYQs**: upload PDF, Word, PowerPoint or Excel files, or a link.

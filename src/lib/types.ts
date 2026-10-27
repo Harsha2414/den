@@ -43,7 +43,11 @@ export interface Attendee {
 }
 export type AnyItem = Post | Note | Placement | Listing | CampusEvent;
 
-export interface Comment { id: string; post_id: string; author_id: string; body: string; created_at: string; author?: Author | null }
+export interface Comment {
+  id: string; post_id: string; author_id: string; body: string; created_at: string; author?: Author | null;
+  /** Replies: the comment this answers (always a top-level comment) and who it answers. */
+  parent_id?: string | null; reply_to?: string | null; replied?: { id: string; name: string } | null;
+}
 
 export interface Space {
   id: string;
