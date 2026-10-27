@@ -14,6 +14,7 @@ const NAV = [
   { href: "/reports", label: "Reports", key: "reports" },
   { href: "/students", label: "Students", key: "" },
   { href: "/colleges", label: "Colleges", key: "colleges" },
+  { href: "/docs", label: "Docs", key: "" },
 ];
 
 export default function Shell({ me, colleges, counts, denUrl, children }: {

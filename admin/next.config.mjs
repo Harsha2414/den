@@ -7,6 +7,8 @@ const nextConfig = {
   // This app lives in the admin/ folder of the Den repo; trace files from here only.
   outputFileTracingRoot: path.dirname(fileURLToPath(import.meta.url)),
   poweredByHeader: false,
+  // The Docs section reads its Markdown files at request time; ship them with the server code.
+  outputFileTracingIncludes: { "/docs": ["./content/docs/**"], "/docs/[slug]": ["./content/docs/**"] },
   async headers() {
     return [{
       source: "/(.*)",

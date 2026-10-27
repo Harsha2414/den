@@ -166,3 +166,52 @@ dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
 .progress i { display: block; height: 100%; background: var(--teal); transition: width .3s ease; }
 .big { display: block; font-family: var(--display); font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .bad-msg { background: var(--rose-soft, #f8e3e7); color: var(--rose); }
+
+/* Docs */
+.doc-lead { max-width: 640px; margin: -6px 0 22px; }
+.doc-list { display: grid; gap: 10px; }
+.doc-item { display: flex; gap: 18px; align-items: flex-start; background: var(--surface); border: 1px solid var(--hair); border-radius: 14px; padding: 18px 20px; text-decoration: none; color: inherit; transition: border-color .15s; }
+.doc-item:hover { border-color: var(--teal); }
+.doc-num { font-family: var(--display); font-weight: 800; font-size: 26px; line-height: 1; color: var(--saffron); min-width: 34px; }
+.doc-text { display: grid; gap: 3px; }
+.doc-text b { font-family: var(--display); font-size: 19px; font-weight: 700; color: var(--ink); }
+.doc-text span { color: var(--muted); }
+.doc-text small { color: var(--muted); font-size: 12px; }
+.doc-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+.doc-bar a { text-decoration: none; font-weight: 500; }
+.doc-grid { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 36px; align-items: start; }
+.doc-toc { position: sticky; top: 24px; display: grid; gap: 2px; border-left: 2px solid var(--hair); padding-left: 14px; }
+.doc-toc h3 { margin-top: 0; }
+.doc-toc a { text-decoration: none; color: var(--muted); font-size: 14px; padding: 3px 0; }
+.doc-toc a:hover { color: var(--teal); }
+.doc { background: var(--surface); border: 1px solid var(--hair); border-radius: 16px; padding: 30px 36px 40px; min-width: 0; font-size: 15.5px; line-height: 1.65; }
+.doc h1 { font-size: 34px; margin-bottom: 6px; }
+.doc h1 + p em { color: var(--muted); font-style: normal; font-size: 14px; }
+.doc h2 { font-family: var(--display); font-size: 24px; font-weight: 700; margin: 36px 0 10px; padding-top: 18px; border-top: 1px solid var(--hair); scroll-margin-top: 16px; }
+.doc h3 { font-family: var(--display); font-size: 19px; font-weight: 700; text-transform: none; letter-spacing: -.01em; color: var(--ink); margin: 26px 0 8px; scroll-margin-top: 16px; }
+.doc h4 { margin: 18px 0 6px; }
+.doc p, .doc ul, .doc ol { margin: 0 0 12px; }
+.doc ul, .doc ol { padding-left: 22px; }
+.doc li { margin: 3px 0; }
+.doc code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .88em; background: var(--chip); padding: 1px 5px; border-radius: 5px; }
+.doc pre { background: var(--chip); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-size: 13px; line-height: 1.45; }
+.doc pre code { background: none; padding: 0; font-size: inherit; }
+.doc-table { overflow-x: auto; margin: 6px 0 16px; border: 1px solid var(--hair); border-radius: 10px; }
+.doc table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.doc th, .doc td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--hair); }
+.doc th { background: var(--chip); font-weight: 600; white-space: nowrap; }
+.doc tr:last-child td { border-bottom: 0; }
+.doc blockquote { margin: 0 0 12px; padding: 4px 14px; border-left: 3px solid var(--saffron); color: var(--muted); }
+.doc-next { display: flex; justify-content: space-between; gap: 12px; margin-top: 18px; }
+.doc-next a { text-decoration: none; font-weight: 500; }
+@media (max-width: 1100px) { .doc-grid { grid-template-columns: minmax(0, 1fr); } .doc-toc { display: none; } }
+@media (max-width: 720px) { .doc { padding: 20px 16px 28px; border-radius: 12px; } .doc h1 { font-size: 27px; } }
+@media print {
+  .nav, .doc-bar, .doc-toc, .doc-next { display: none !important; }
+  .shell { display: block; }
+  .page { padding: 0; max-width: none; }
+  .doc { border: 0; padding: 0; }
+  body { background: #fff; color: #000; }
+  .doc h2 { break-after: avoid; }
+  .doc-table, .doc pre { break-inside: avoid; }
+}
