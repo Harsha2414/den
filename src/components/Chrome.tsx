@@ -62,6 +62,9 @@ const ChromeCtx = createContext<{ openMenu: () => void; openSwitch: () => void; 
   openMenu: () => {}, openSwitch: () => {}, unread: 0,
 });
 
+/** Remembers whether the laptop menu is hidden. */
+const SIDE_KEY = "den_side";
+
 export function ChromeShell({ children }: { children: ReactNode }) {
   const { me, ensureCollege } = useApp();
   const path = usePathname();
@@ -69,6 +72,13 @@ export function ChromeShell({ children }: { children: ReactNode }) {
   const unread = useUnread(me.id);
   const [menu, setMenu] = useState(false);
   const [switcher, setSwitcher] = useState(false);
+  // Laptops: the menu sits on the left and can be hidden; the choice is remembered on this device.
+  const [sideOff, setSideOff] = useState(false);
+  useEffect(() => { try { setSideOff(localStorage.getItem(SIDE_KEY) === "off"); } catch { /* storage unavailable */ } }, []);
+  const wide = () => typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
+  const setSide = (off: boolean) => { setSideOff(off); try { localStorage.setItem(SIDE_KEY, off ? "off" : "on"); } catch { /* storage unavailable */ } };
+  const openMenu = () => { if (wide()) setSide(false); else setMenu(true); };
+  const closeMenu = () => { if (wide()) setSide(true); else setMenu(false); };
 
   // Close the drawer and switch on every page change.
   const query = useSearchParams().toString();
@@ -104,10 +114,10 @@ export function ChromeShell({ children }: { children: ReactNode }) {
 
   return (
     <GateProvider><OnlineProvider>
-    <ChromeCtx.Provider value={{ openMenu: () => setMenu(true), openSwitch: () => setSwitcher(true), unread }}>
-      <div className="shell">
+    <ChromeCtx.Provider value={{ openMenu, openSwitch: () => setSwitcher(true), unread }}>
+      <div className={`shell ${sideOff ? "side-off" : ""}`}>
         <div className={`drawer-scrim ${menu ? "show" : ""}`} onClick={() => setMenu(false)} aria-hidden="true" />
-        <SideMenu open={menu} onClose={() => setMenu(false)} />
+        <SideMenu open={menu} onClose={closeMenu} />
         <div className="shell-main">
           <TopBar />
           {children}
@@ -253,6 +263,7 @@ function SideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
       <div className="side-head">
         <Link href={`/c/${me.college_id}`} className="brand" onClick={onClose}>Den<span>.</span></Link>
         <button className="plain-btn side-close" onClick={onClose} aria-label="Close menu"><Icon name="x" size={20} /></button>
+        <button className="plain-btn side-hide" onClick={onClose} aria-label="Hide menu" title="Hide menu"><Icon name="sidebar" size={20} /></button>
       </div>
       <Link href="/me" className="side-me" onClick={onClose}>
         <Avatar id={me.id} name={me.name} />

@@ -31,18 +31,17 @@ export default function ReactButton({ likes, onReact }: { likes: Likes; onReact:
     timer.current = window.setTimeout(() => { held.current = true; setOpen(true); navigator.vibrate?.(12); }, HOLD_MS);
   };
   const stop = () => { if (timer.current) { window.clearTimeout(timer.current); timer.current = null; } };
-  const top = topReactions(likes.counts);
-  const onlyHearts = top.length <= 1 && (!top[0] || top[0] === "heart");
+  // Everyone's reactions, for screen readers and the tooltip (the button itself shows only yours).
+  const summary = topReactions(likes.counts).map((r) => `${emojiOf(r)} ${likes.counts[r]}`).join("  ");
 
   return (
     <div className="react" ref={box}>
-      <button type="button" className={`ghost react-btn ${likes.mine ? "on" : ""}`} aria-pressed={likes.mine}
+      <button type="button" className={`ghost react-btn ${likes.mine ? "on" : ""}`} aria-pressed={likes.mine} title={summary || undefined}
         aria-label={`${likes.mine ? `Your reaction: ${labelOf(likes.my)}. Tap to remove` : "Like"}${likes.n ? `, ${likes.n}` : ""}. Long-press for more reactions`}
         onPointerDown={start} onPointerUp={stop} onPointerLeave={stop} onPointerCancel={stop}
         onContextMenu={(e) => { e.preventDefault(); stop(); setOpen(true); }}
         onClick={() => { if (held.current) { held.current = false; return; } onReact(); }}>
         {likes.my && likes.my !== "heart" ? <span className="react-mine">{emojiOf(likes.my)}</span> : <Icon name="heart" size={17} fill={likes.mine} />}
-        {!onlyHearts && <span className="react-top" aria-hidden="true">{top.map((r) => <span key={r}>{emojiOf(r)}</span>)}</span>}
         {likes.n ? <span>{likes.n}</span> : null}
       </button>
       {open && (

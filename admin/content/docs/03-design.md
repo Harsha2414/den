@@ -98,7 +98,7 @@ Bricolage Grotesque was used before 24 October and has been removed, so Den now 
 
 - **Top bar**: menu, the **Den.** logo, the college switch pill, search, and your profile photo.
 - **College switcher**: drops down from the top, with your college, All India, recently visited, and search across every college.
-- **Side menu**: grouped into *Study & career*, *Create* and *Yours*. It's always open on laptops.
+- **Side menu**: grouped into *Study & career*, *Create* and *Yours*. On laptops it sits on the left and can be hidden with the button at its top; the ☰ button brings it back, and Den remembers the choice on that device.
 - **Bottom bar on phones**: Home, Spaces, Events, Messages.
 - **Feed**: light, without boxes around every post. A round **+** button creates a post, grey placeholders show while loading, and motion is smooth.
 - **Sheets**: forms slide up from the bottom on phones.

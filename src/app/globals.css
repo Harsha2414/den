@@ -863,3 +863,14 @@ html.theme-fade, html.theme-fade * { transition: background-color .3s ease, colo
 .replying { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); padding: 6px 10px; border-radius: 8px; background: var(--chip); }
 .replying b { color: var(--ink); }
 .replying .ghost { margin-left: auto; padding: 2px; }
+
+/* Laptops: hide or show the left menu. */
+.side-hide { display: none; }
+@media (min-width: 1024px) {
+  .side-hide { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; color: var(--muted); }
+  .side-hide:hover { background: var(--chip); color: var(--ink); }
+  .shell.side-off { grid-template-columns: minmax(0, 1fr); }
+  .shell.side-off .side { display: none; }
+  .shell.side-off .menu-btn, .shell.side-off .bar-l > .brand { display: inline-flex; }
+  .shell.side-off .fresh-pill { left: 50%; }
+}

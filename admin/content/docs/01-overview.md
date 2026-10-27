@@ -61,7 +61,7 @@ Den is for students aged **18 and over** for now (see the Roadmap for 16–17).
 - **Filter chips** on the feed: All, Doubts, Announcements, Lost & found, Hostel life.
 - **"↑ New posts" button** when posts arrive while reading (checked every 40 seconds).
 - **First-post screen** for a college with no posts yet: "Start <college> on Den", with Write the first post and Invite classmates on WhatsApp.
-- **Reactions**: tap the heart to like; long-press it (or right-click on a laptop) for ❤️ 😂 😮 😢 🔥 👏. The top reactions show next to the count.
+- **Reactions**: tap the heart to like; long-press it (or right-click on a laptop) for ❤️ 😂 😮 😢 🔥 👏. The button shows only your own reaction and the total count; hover on a laptop to see everyone's reactions.
 - **Save posts** with the bookmark. **Saved posts** (in the menu and on Profile) lists them, and only you can see it.
 - **Comments** show the commenter's photo and name, with the comment underneath. **Reply** under any comment: replies sit indented under it and start with @Name. Long threads fold to the last two replies.
 - **Share** on every post (the phone's share sheet, or copy link). Each post has its own page (`/p/<id>`) with comments open.
