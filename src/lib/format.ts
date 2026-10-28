@@ -29,6 +29,8 @@ export const AUTHOR_COLS = "id,name,branch,year,verified,college_id";
 export function friendlyError(e: { message?: string; code?: string } | null | undefined, fallback = "Something went wrong. Try again."): string {
   if (!e) return fallback;
   const m = e.message || "";
+  // A feature whose database update (a supabase/migrations file) hasn't been run yet.
+  if (/schema cache|does not exist|PGRST20[02]/i.test(m) || /^(42883|42P01|42703|PGRST202|PGRST205)$/.test(e.code || "")) return "This feature isn't switched on yet. The admin needs to run the latest database update in Supabase.";
   if (/row-level security|permission denied/i.test(m)) return "You can't do that. If you haven't verified your student account yet, verify it first (menu → Get your blue tick).";
   if (/violates check constraint/i.test(m)) return "Some details are missing or too long. Check the form and try again.";
   if (/duplicate key/i.test(m)) return "That already exists.";
