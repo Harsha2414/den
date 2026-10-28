@@ -21,6 +21,8 @@ import Avatar from "./Avatar";
 import Happening from "./Happening";
 import { inviteMessage, whatsappLink } from "@/lib/share";
 import { groupLikes, nextLikes, NO_LIKES, type Likes } from "@/lib/reactions";
+import { loadExtras, loadFilters, nextPoll, type Poll } from "@/lib/postExtras";
+import { usePullToRefresh } from "@/lib/pullToRefresh";
 
 const INDIA_TABS: SectionKey[] = ["posts", "notes", "placements", "events"];
 const COLLEGE_TABS: SectionKey[] = ["posts", "notes", "placements", "listings", "events"];
@@ -65,42 +67,62 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
   const [patched, setPatched] = useState<Record<string, Partial<AnyItem>>>({});
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("");
+  const [sort, setSort] = useState<"latest" | "top">("latest");
+  const [pollOver, setPollOver] = useState<Record<string, Poll>>({});
   const { canAct } = useApp();
   const [composing, setComposing] = useState(!!startComposing && canAct && (scope === me.college_id || scope === "india"));
   const [reporting, setReporting] = useState<string | null>(null);
   const qc = useQueryClient();
-  const key = ["scope", scope, tab, kind] as const;
+  const key = ["scope", scope, tab, kind, sort] as const;
 
-  type Page = { rows: AnyItem[]; likes: Record<string, Likes>; saved: string[]; rsvps: Record<string, { going: number; mine: RsvpStatus | null }> };
+  // People you muted and posts you hid (posts only; loaded once).
+  const filtersQ = useQuery({ queryKey: ["feed-filters", me.id], enabled: tab === "posts", staleTime: 5 * 60_000, queryFn: () => loadFilters(supabase) });
+  const filters = filtersQ.data;
+
+  type Page = { rows: AnyItem[]; likes: Record<string, Likes>; saved: string[]; polls: Record<string, Poll>; rsvps: Record<string, { going: number; mine: RsvpStatus | null }> };
   const feed = useInfiniteQuery({
     queryKey: key,
     initialPageParam: 0,
-    getNextPageParam: (last: Page, all: Page[]) => (last.rows.length < PAGE ? undefined : all.length * PAGE),
+    // Hidden or muted posts are dropped after loading, so "full" (not rows.length) says whether there's more.
+    getNextPageParam: (last: Page, all: Page[]) => ((last as Page & { full?: boolean }).full ?? last.rows.length >= PAGE ? all.length * PAGE : undefined),
+    enabled: tab !== "posts" || !!filters,
     queryFn: async ({ pageParam }): Promise<Page> => {
       const author = `author:profiles!${tab}_author_id_fkey(${AUTHOR_COLS})`;
       const sel = tab === "posts" ? `*, ${author}, comments(count)` : `*, ${author}`;
-      let q = supabase.from(tab).select(sel);
-      if (tab === "posts" && india) q = q.eq("visibility", "india");
-      if (tab === "posts" && kind) q = q.eq("kind", kind);
-      if (!india) q = q.eq("college_id", scope);
-      q = tab === "events" ? q.gte("event_date", todayIST()).order("event_date", { ascending: true }) : q.order("created_at", { ascending: false });
-      const { data, error: err } = await q.range(pageParam, pageParam + PAGE - 1);
-      if (err) throw new Error(friendlyError(err, "Couldn't load this page. Try again."));
-      const rows = (data || []) as unknown as AnyItem[];
+      let rows: AnyItem[];
+      let pageSize = PAGE;
+      if (tab === "posts" && sort === "top") {
+        // Top this week: the database ranks the ids, then the posts are loaded in that order.
+        const { data: top, error: te } = await supabase.rpc("top_posts", { p_scope: scope, p_kind: kind, p_offset: pageParam, p_limit: PAGE });
+        if (te) throw new Error("Top this week isn't switched on yet. Ask your admin to run the latest database update.");
+        const order = ((top || []) as { id: string }[]).map((t) => t.id);
+        pageSize = order.length;
+        const { data } = order.length ? await supabase.from("posts").select(sel).in("id", order) : { data: [] };
+        const byId = new Map(((data || []) as unknown as AnyItem[]).map((r) => [r.id, r]));
+        rows = order.map((id) => byId.get(id)).filter(Boolean) as AnyItem[];
+      } else {
+        let q = supabase.from(tab).select(sel);
+        if (tab === "posts" && india) q = q.eq("visibility", "india");
+        if (tab === "posts" && kind) q = q.eq("kind", kind);
+        if (!india) q = q.eq("college_id", scope);
+        q = tab === "events" ? q.gte("event_date", todayIST()).order("event_date", { ascending: true }) : q.order("created_at", { ascending: false });
+        const { data, error: err } = await q.range(pageParam, pageParam + PAGE - 1);
+        if (err) throw new Error(friendlyError(err, "Couldn't load this page. Try again."));
+        rows = (data || []) as unknown as AnyItem[];
+      }
+      const fullPage = pageSize >= PAGE;
+      if (tab === "posts" && filters) rows = rows.filter((r) => !filters.hidden.includes(r.id) && !filters.muted.includes(r.author_id));
       const ids = rows.map((r) => r.id);
       let likes: Page["likes"] = {};
       let saved: string[] = [];
+      let polls: Page["polls"] = {};
       const rsvps: Page["rsvps"] = {};
       const likeType = LIKE_TYPE_OF[tab];
-      if (likeType && ids.length) {
-        const [{ data: ls, error: le }, sv] = await Promise.all([
-          supabase.from("likes").select(tab === "posts" ? "item_id,user_id,reaction" : "item_id,user_id").eq("item_type", likeType).in("item_id", ids),
-          tab === "posts" ? supabase.from("saved_posts").select("post_id").in("post_id", ids) : Promise.resolve({ data: [] }),
-        ]);
-        // Before migration 0011 there is no reaction column: read plain likes instead.
-        const rowsL = le && tab === "posts" ? (await supabase.from("likes").select("item_id,user_id").eq("item_type", likeType).in("item_id", ids)).data : ls;
-        likes = groupLikes((rowsL || []) as unknown as { item_id: string; user_id: string; reaction?: string }[], me.id);
-        saved = ((sv.data || []) as { post_id: string }[]).map((x) => x.post_id);
+      if (tab === "posts") {
+        ({ likes, saved, polls } = await loadExtras(supabase, ids, me.id));
+      } else if (likeType && ids.length) {
+        const { data: ls } = await supabase.from("likes").select("item_id,user_id").eq("item_type", likeType).in("item_id", ids);
+        likes = groupLikes((ls || []) as { item_id: string; user_id: string }[], me.id);
       }
       if (tab === "events" && ids.length) {
         const { data: rs } = await supabase.from("event_rsvps").select("event_id,user_id,status").in("event_id", ids);
@@ -110,7 +132,7 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
           if (x.user_id === me.id) e.mine = x.status;
         });
       }
-      return { rows, likes, saved, rsvps };
+      return { rows, likes, saved, polls, rsvps, full: fullPage } as Page;
     },
   });
   const error = feed.error ? (feed.error as Error).message : "";
@@ -125,7 +147,8 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
   }, [feed.data, savedOver]);
   const rsvpMap = useMemo(() => Object.assign({}, ...(feed.data?.pages.map((p) => p.rsvps) || [])), [feed.data]) as Page["rsvps"];
   // Fresh data from the server replaces quick local changes.
-  useEffect(() => { setLikeOver({}); setPatched({}); setSavedOver({}); }, [feed.dataUpdatedAt]);
+  const pollMap = useMemo(() => ({ ...Object.assign({}, ...(feed.data?.pages.map((p) => p.polls || {}) || [])), ...pollOver }), [feed.data, pollOver]) as Record<string, Poll>;
+  useEffect(() => { setLikeOver({}); setPatched({}); setSavedOver({}); setPollOver({}); }, [feed.dataUpdatedAt]);
   const reload = () => qc.invalidateQueries({ queryKey: key });
 
   // The line under the college name: how many students, how many posts today. Only real numbers.
@@ -142,10 +165,10 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
   });
 
   // Posts that arrived while reading: a "new posts" button instead of the list jumping.
-  const newest = items?.[0]?.created_at;
+  const newest = items?.reduce((m, r) => (r.created_at > m ? r.created_at : m), "") || undefined;
   const freshQ = useQuery({
     queryKey: ["fresh", scope, kind, newest],
-    enabled: tab === "posts" && !!newest,
+    enabled: tab === "posts" && sort === "latest" && !!newest,
     refetchInterval: NEW_POSTS_EVERY,
     refetchIntervalInBackground: false,
     queryFn: async () => {
@@ -162,6 +185,27 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
     reload();
     qc.invalidateQueries({ queryKey: ["posts-today", scope] });
   }
+
+  // The pinned post of this college (Den admins pin one at a time).
+  const pinnedQ = useQuery({
+    queryKey: ["pinned", scope],
+    enabled: tab === "posts" && !india,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("posts").select(`*, author:profiles!posts_author_id_fkey(${AUTHOR_COLS}), comments(count)`)
+        .eq("college_id", scope).not("pinned_at", "is", null).order("pinned_at", { ascending: false }).limit(1);
+      if (error || !data?.length) return null;
+      const post = data[0] as unknown as AnyItem;
+      return { post, extras: await loadExtras(supabase, [post.id], me.id) };
+    },
+  });
+  const pinned = pinnedQ.data && !removed.has(pinnedQ.data.post.id) && !filters?.hidden.includes(pinnedQ.data.post.id) ? pinnedQ.data : null;
+
+  // Pull down at the top of the feed to refresh (phones).
+  const pull = usePullToRefresh(async () => {
+    await Promise.all([qc.refetchQueries({ queryKey: key }), qc.refetchQueries({ queryKey: ["happening", scope] }), qc.refetchQueries({ queryKey: ["pinned", scope] })]);
+    qc.invalidateQueries({ queryKey: ["posts-today", scope] });
+  }, tab === "posts");
 
   const liveQ = useQuery({
     queryKey: ["live", scope],
@@ -197,12 +241,14 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
     if (startComposing) router.replace(india ? `/india?tab=${tab}` : `/c/${scope}?tab=${tab}`);
   }
 
+  const pinnedId = tab === "posts" && !kind && sort === "latest" ? pinnedQ.data?.post.id : undefined;
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!items) return null;
-    if (!q) return items;
-    return items.filter((i) => (JSON.stringify(i) + " " + (i.author?.name || "")).toLowerCase().includes(q));
-  }, [items, query]);
+    const list = pinnedId ? items.filter((i) => i.id !== pinnedId) : items;
+    if (!q) return list;
+    return list.filter((i) => (JSON.stringify(i) + " " + (i.author?.name || "")).toLowerCase().includes(q));
+  }, [items, query, pinnedId]);
 
   async function toggleLike(item: AnyItem, reaction?: string) {
     if (!gate("like posts")) return;
@@ -215,6 +261,59 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
       : op === "update" ? await supabase.from("likes").update({ reaction: r }).match(match)
       : await supabase.from("likes").insert(r === "heart" ? { item_type: likeType, item_id: item.id } : { item_type: likeType, item_id: item.id, reaction: r });
     if (res.error) { setLikeOver((m) => ({ ...m, [item.id]: cur })); toast(friendlyError(res.error)); }
+  }
+
+  async function vote(item: AnyItem, choice: number) {
+    if (!gate("vote in polls")) return;
+    const cur = pollMap[item.id]; if (!cur) return;
+    const { next, op } = nextPoll(cur, choice);
+    setPollOver((m) => ({ ...m, [item.id]: next }));
+    const match = { post_id: item.id, user_id: me.id };
+    const res = op === "delete" ? await supabase.from("poll_votes").delete().match(match)
+      : op === "update" ? await supabase.from("poll_votes").update({ choice }).match(match)
+      : await supabase.from("poll_votes").insert({ post_id: item.id, choice });
+    if (res.error) { setPollOver((m) => ({ ...m, [item.id]: cur })); toast(friendlyError(res.error, "Couldn't save your vote.")); }
+  }
+
+  async function hide(item: AnyItem) {
+    setRemoved((r) => new Set(r).add(item.id));
+    const { error: err } = await supabase.from("hidden_posts").insert({ post_id: item.id });
+    if (err) { setRemoved((r) => { const n = new Set(r); n.delete(item.id); return n; }); return toast(friendlyError(err, "Couldn't hide that.")); }
+    qc.invalidateQueries({ queryKey: ["feed-filters", me.id] });
+    toast("Post hidden. You won't see it again.");
+  }
+
+  async function mute(item: AnyItem) {
+    const name = item.author?.name || "this person";
+    const { error: err } = await supabase.from("muted_users").insert({ muted_id: item.author_id });
+    if (err && !/duplicate/i.test(err.message)) return toast(friendlyError(err, "Couldn't mute them."));
+    const theirs = (items || []).filter((r) => r.author_id === item.author_id).map((r) => r.id);
+    setRemoved((r) => { const n = new Set(r); theirs.forEach((id) => n.add(id)); return n; });
+    qc.invalidateQueries({ queryKey: ["feed-filters", me.id] });
+    toast(`Muted ${name}. Unmute from their profile any time.`);
+  }
+
+  async function pin(item: AnyItem, on: boolean) {
+    const { error: err } = await supabase.rpc("admin_pin_post", { p_post: item.id, p_pin: on });
+    if (err) return toast(friendlyError(err, "Couldn't pin that."));
+    toast(on ? "Pinned to the top" : "Unpinned");
+    qc.invalidateQueries({ queryKey: ["pinned", scope] }); reload();
+  }
+
+  /** A post just written shows at the top straight away, without reloading the list. */
+  async function addNewPost(id: string) {
+    const { data } = await supabase.from("posts").select(`*, author:profiles!posts_author_id_fkey(${AUTHOR_COLS}), comments(count)`).eq("id", id).maybeSingle();
+    const row = data as unknown as AnyItem | null;
+    if (!row) return reload();
+    const fits = (!kind || (row as { kind?: string }).kind === kind) && (india ? (row as { visibility?: string }).visibility === "india" : row.college_id === scope);
+    if (fits && sort === "latest") {
+      const extras = await loadExtras(supabase, [id], me.id);
+      qc.setQueryData(key, (old: { pages: Page[]; pageParams: unknown[] } | undefined) => old && ({
+        ...old, pages: old.pages.map((pg, i) => i === 0 ? { ...pg, rows: [row, ...pg.rows.filter((r) => r.id !== id)], polls: { ...pg.polls, ...extras.polls }, likes: { ...pg.likes, ...extras.likes } } : pg),
+      }));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    qc.invalidateQueries({ queryKey: ["posts-today", scope] });
   }
 
   async function toggleSave(item: AnyItem) {
@@ -248,6 +347,12 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
   return (
     <main className={`wrap page ${tab === "posts" ? "feed-page home-wide" : ""}`}>
       <div className="home-col">
+      {tab === "posts" && (pull.pull > 0 || pull.busy) && (
+        <div className="ptr" style={{ height: pull.pull }} aria-live="polite">
+          {pull.busy ? <span className="spinner" /> : <span className={`ptr-arrow ${pull.ready ? "up" : ""}`}>↓</span>}
+          <small>{pull.busy ? "Refreshing…" : pull.ready ? "Release to refresh" : "Pull to refresh"}</small>
+        </div>
+      )}
       {tab === "posts" && <><VerifyBanner /><VouchInbox /></>}
       {tab !== "posts" && (
         <div className="page-head">
@@ -276,6 +381,28 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
           {KINDS.map((k) => (
             <button key={k.id || "all"} type="button" aria-pressed={kind === k.id} onClick={() => setKind(k.id)}>{k.label}</button>
           ))}
+        </div>
+      )}
+      {tab === "posts" && (kind || !!items?.length || sort === "top") && (
+        <div className="sort-row">
+          <div className="seg" role="group" aria-label="Order">
+            <button aria-pressed={sort === "latest"} onClick={() => setSort("latest")}>Latest</button>
+            <button aria-pressed={sort === "top"} onClick={() => setSort("top")}>Top this week</button>
+          </div>
+        </div>
+      )}
+      {tab === "posts" && pinned && !kind && sort === "latest" && (
+        <div className="feed pinned-wrap">
+          <ItemCard type="posts" item={pinned.post} showCollege={false}
+            likes={(likeOver[pinned.post.id] || pinned.extras.likes[pinned.post.id] || NO_LIKES).n} liked={!!(likeOver[pinned.post.id] || pinned.extras.likes[pinned.post.id])?.mine}
+            reactions={likeOver[pinned.post.id] || pinned.extras.likes[pinned.post.id] || NO_LIKES} saved={savedSet.has(pinned.post.id) || (savedOver[pinned.post.id] ?? pinned.extras.saved.includes(pinned.post.id))}
+            poll={pollOver[pinned.post.id] || pinned.extras.polls[pinned.post.id]}
+            actions={{
+              onLike: () => toggleLike(pinned.post), onReact: (r) => toggleLike(pinned.post, r), onSave: () => toggleSave(pinned.post),
+              onVote: (c) => vote(pinned.post, c), onHide: () => hide(pinned.post), onMute: () => mute(pinned.post), onPin: (on) => pin(pinned.post, on),
+              onDelete: () => remove(pinned.post), onReport: () => setReporting(pinned.post.id),
+              onEdited: () => qc.invalidateQueries({ queryKey: ["pinned", scope] }),
+            }} />
         </div>
       )}
       {tab !== "posts" && liveSpaces.length > 0 && (
@@ -337,8 +464,11 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
             ) : (
               <div className={tab === "posts" ? "" : "vitem"}><ItemCard type={tab} item={item} showCollege={india}
                 likes={likeMap[item.id]?.n || 0} liked={!!likeMap[item.id]?.mine}
-                reactions={tab === "posts" ? likeMap[item.id] || NO_LIKES : undefined} saved={savedSet.has(item.id)}
+                reactions={tab === "posts" ? likeMap[item.id] || NO_LIKES : undefined} saved={savedSet.has(item.id)} poll={tab === "posts" ? pollMap[item.id] : undefined}
                 actions={{
+                  onVote: tab === "posts" ? (c) => vote(item, c) : undefined,
+                  onHide: () => hide(item), onMute: () => mute(item), onPin: (on) => pin(item, on),
+                  onEdited: (b) => setPatched((p) => ({ ...p, [item.id]: { ...p[item.id], body: b, edited_at: new Date().toISOString() } as Partial<AnyItem> })),
                   onLike: LIKE_TYPE_OF[tab] ? () => toggleLike(item) : undefined,
                   onReact: tab === "posts" ? (r) => toggleLike(item, r) : undefined,
                   onSave: tab === "posts" ? () => toggleSave(item) : undefined,
@@ -357,7 +487,7 @@ export default function ScopeHome({ scope, initialTab, startComposing }: { scope
       </div>
       {tab === "posts" && <Happening scope={scope} variant="rail" />}
       {canPostHere && <button className={`fab ${tab === "posts" ? "fab-home" : ""}`} onClick={() => { if (gate("post")) setComposing(true); }} aria-label={sec.cta}><Icon name="plus" size={24} /><span>{sec.cta}</span></button>}
-      {composing && <Composer section={tab} defaultIndia={india} onClose={closeComposer} onPosted={(id) => { setComposing(false); if (tab === "events" && id) router.push(`/events/${id}`); else { if (startComposing) closeComposer(); reload(); } }} />}
+      {composing && <Composer section={tab} defaultIndia={india} onClose={closeComposer} onPosted={(id) => { setComposing(false); if (tab === "events" && id) router.push(`/events/${id}`); else { if (startComposing) closeComposer(); if (tab === "posts" && id) addNewPost(id); else reload(); } }} />}
       {reporting && <ReportSheet targetType={REPORT_TYPE_OF[tab]} targetId={reporting} onClose={() => setReporting(null)} />}
     </main>
   );

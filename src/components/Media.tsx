@@ -1,6 +1,12 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { ACCEPT_ATTR, allowed, chatUrls, kindOf, publicUrl, sizeLabel, upload, type Accept, type Bucket, type Media } from "@/lib/media";
+import { ACCEPT_ATTR, allowed, chatUrls, kindOf, publicUrl, sizeLabel, thumbHashUrl, upload, type Accept, type Bucket, type Media } from "@/lib/media";
+import { useDataSaver } from "@/lib/dataSaver";
+import YarlLightbox from "yet-another-react-lightbox";
+import Zoom from "yet-another-react-lightbox/plugins/zoom";
+import Counter from "yet-another-react-lightbox/plugins/counter";
+import "yet-another-react-lightbox/styles.css";
+import "yet-another-react-lightbox/plugins/counter.css";
 import { useApp } from "./AppContext";
 import Icon from "./Icon";
 
@@ -76,33 +82,73 @@ export function MediaPicker({ value, onChange, accept = "images", max = 4, bucke
   );
 }
 
-/** Show attached photos (grid with full-screen view), videos and files. */
-export function MediaView({ items, bucket = "media", className = "" }: { items: Media[]; bucket?: Bucket; className?: string }) {
+/** Show attached photos (grid; tap for a full-screen viewer with pinch-zoom and swipe), videos and files.
+ *  onDoubleTap: posts use it for "double-tap to like" (a single tap still opens the viewer). */
+export function MediaView({ items, bucket = "media", className = "", onDoubleTap, alwaysLoad }: {
+  items: Media[]; bucket?: Bucket; className?: string; onDoubleTap?: () => void;
+  /** Show photos even with data saver on (the post's own page). */
+  alwaysLoad?: boolean;
+}) {
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [open, setOpen] = useState<number | null>(null);
+  const [loaded, setLoaded] = useState<Record<string, boolean>>({});
+  const [burst, setBurst] = useState(0);
+  const saver = useDataSaver();
+  const [tapped, setTapped] = useState(false);
+  const lastTap = useRef(0);
+  const single = useRef<number | null>(null);
   useEffect(() => {
     if (!items.length) return;
     if (bucket === "media") setUrls(Object.fromEntries(items.map((m) => [m.path, publicUrl(m.path)])));
     else chatUrls(items.map((m) => m.path)).then(setUrls);
   }, [items, bucket]);
+  useEffect(() => () => { if (single.current) window.clearTimeout(single.current); }, []);
   if (!items.length) return null;
   const imgs = items.filter((m) => m.kind === "image");
   const vids = items.filter((m) => m.kind === "video");
   const files = items.filter((m) => m.kind === "file");
+  const hold = saver && !alwaysLoad && !tapped && bucket === "media";
+  const photoBytes = imgs.reduce((n, m) => n + (m.size || 0), 0);
+
+  function tap(i: number) {
+    if (!onDoubleTap) return setOpen(i);
+    const now = Date.now();
+    if (now - lastTap.current < 280) {
+      if (single.current) { window.clearTimeout(single.current); single.current = null; }
+      lastTap.current = 0;
+      setBurst((b) => b + 1);
+      onDoubleTap();
+      return;
+    }
+    lastTap.current = now;
+    single.current = window.setTimeout(() => { single.current = null; setOpen(i); }, 280);
+  }
+
   return (
     <div className={`mview ${className}`}>
-      {imgs.length > 0 && (
+      {imgs.length > 0 && (hold ? (
+        <button type="button" className="msaver" onClick={(e) => { e.stopPropagation(); setTapped(true); }}
+          style={thumbHashUrl(imgs[0].th) ? { backgroundImage: `url(${thumbHashUrl(imgs[0].th)})` } : undefined}>
+          <span><Icon name="image" size={18} /> Tap to load {imgs.length === 1 ? "photo" : `${imgs.length} photos`}{photoBytes ? ` (${sizeLabel(photoBytes)})` : ""}</span>
+        </button>
+      ) : (
         <div className={`mgrid n${Math.min(imgs.length, 4)}`}>
-          {imgs.slice(0, 4).map((m, i) => (
-            <button key={m.path} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(i); }} aria-label={`Open photo ${i + 1}`}>
-              {urls[m.path] ? <img src={urls[m.path]} alt="" loading="lazy" width={m.w} height={m.h} /> : <span className="sk" />}
-              {i === 3 && imgs.length > 4 && <em>+{imgs.length - 4}</em>}
-            </button>
-          ))}
+          {imgs.slice(0, 4).map((m, i) => {
+            const ph = thumbHashUrl(m.th);
+            return (
+              <button key={m.path} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); tap(i); }} aria-label={`Open photo ${i + 1}`}
+                style={ph && !loaded[m.path] ? { backgroundImage: `url(${ph})`, backgroundSize: "cover" } : undefined}>
+                {urls[m.path] ? <img src={urls[m.path]} alt="" loading="lazy" width={m.w} height={m.h} className={ph ? (loaded[m.path] ? "in" : "fade") : ""}
+                  onLoad={() => setLoaded((l) => ({ ...l, [m.path]: true }))} /> : <span className="sk" />}
+                {i === 3 && imgs.length > 4 && <em>+{imgs.length - 4}</em>}
+              </button>
+            );
+          })}
+          {burst > 0 && <span key={burst} className="heart-burst" aria-hidden="true"><Icon name="heart" size={84} fill /></span>}
         </div>
-      )}
+      ))}
       {vids.map((m) => urls[m.path]
-        ? <video key={m.path} src={urls[m.path]} controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} />
+        ? <video key={m.path} src={urls[m.path]} controls playsInline preload={saver && !alwaysLoad ? "none" : "metadata"} onClick={(e) => e.stopPropagation()} />
         : <span key={m.path} className="sk" style={{ height: 180 }} />)}
       {files.map((m) => (
         <a key={m.path} className="mfile" href={urls[m.path] ? `${urls[m.path]}${urls[m.path].includes("?") ? "&" : "?"}download=${encodeURIComponent(m.name)}` : undefined}
@@ -112,33 +158,13 @@ export function MediaView({ items, bucket = "media", className = "" }: { items: 
           <Icon name="download" size={18} />
         </a>
       ))}
-      {open !== null && <Lightbox items={imgs} urls={urls} start={open} onClose={() => setOpen(null)} />}
-    </div>
-  );
-}
-
-function Lightbox({ items, urls, start, onClose }: { items: Media[]; urls: Record<string, string>; start: number; onClose: () => void }) {
-  const [i, setI] = useState(start);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      if (e.key === "ArrowRight") setI((x) => Math.min(items.length - 1, x + 1));
-      if (e.key === "ArrowLeft") setI((x) => Math.max(0, x - 1));
-    };
-    document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow; document.body.style.overflow = "hidden";
-    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
-  }, [items.length, onClose]);
-  const m = items[i];
-  return (
-    <div className="lightbox" onClick={(e) => { e.stopPropagation(); onClose(); }} role="dialog" aria-modal="true" aria-label="Photo">
-      <img src={urls[m.path]} alt="" onClick={(e) => e.stopPropagation()} />
-      <button className="lb-x" aria-label="Close" onClick={onClose}><Icon name="x" size={22} /></button>
-      {items.length > 1 && <>
-        <button className="lb-prev" aria-label="Previous" disabled={i === 0} onClick={(e) => { e.stopPropagation(); setI(i - 1); }}><Icon name="back" size={24} /></button>
-        <button className="lb-next" aria-label="Next" disabled={i === items.length - 1} onClick={(e) => { e.stopPropagation(); setI(i + 1); }}><Icon name="chevRight" size={24} /></button>
-        <span className="lb-count">{i + 1} / {items.length}</span>
-      </>}
+      {open !== null && (
+        <YarlLightbox open close={() => setOpen(null)} index={open} plugins={imgs.length > 1 ? [Zoom, Counter] : [Zoom]}
+          slides={imgs.map((m) => ({ src: urls[m.path], width: m.w, height: m.h }))}
+          carousel={{ finite: true }} zoom={{ maxZoomPixelRatio: 3, scrollToZoom: true }}
+          controller={{ closeOnBackdropClick: true, closeOnPullDown: true }}
+          render={imgs.length > 1 ? undefined : { buttonPrev: () => null, buttonNext: () => null }} />
+      )}
     </div>
   );
 }

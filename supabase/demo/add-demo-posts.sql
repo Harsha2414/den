@@ -1,6 +1,6 @@
 -- Den: demo posts for testing the home page.
 -- Adds 12 demo students to YOUR college (the college of the first admin account), with 40 posts,
--- comments, likes and 3 upcoming events, so you can scroll the feed and try likes and comments.
+-- comments, likes, a poll and 3 upcoming events, so you can scroll the feed and try likes and comments.
 --
 -- Run in the Supabase SQL Editor. Remove everything again with remove-demo-posts.sql.
 -- Demo students have emails ending in @den-demo.ac.in. No emails are sent and nobody can sign in as them.
@@ -110,6 +110,14 @@ begin
     (v_users[1], v_college, 'Techfest opening night', 'Fest', (now() at time zone 'Asia/Kolkata')::date + 2, '18:00', 'Main auditorium', 'Robotics showcase, music and food stalls.'),
     (v_users[4], v_college, 'Graph algorithms workshop', 'Workshop', (now() at time zone 'Asia/Kolkata')::date + 4, '16:00', 'Seminar hall', 'Bring a laptop. Beginners welcome.'),
     (v_users[12], v_college, 'Inter-hostel football final', 'Sports', (now() at time zone 'Asia/Kolkata')::date + 6, '17:30', 'College ground', '');
+
+  -- A poll on the elective question, with votes (only when migration 0013 has been run).
+  if to_regclass('public.polls') is not null then
+    execute 'insert into public.polls (post_id, options) values ($1, $2)' using v_posts[9], array['Cryptography', 'Cloud Computing', 'Data Mining'];
+    for j in 1 .. array_length(v_users, 1) loop
+      execute 'insert into public.poll_votes (post_id, user_id, choice) values ($1, $2, $3)' using v_posts[9], v_users[j], (j * 7) % 3;
+    end loop;
+  end if;
 
   raise notice 'Added % demo students, % posts and 3 events to %', array_length(v_users, 1), array_length(v_posts, 1), v_college;
 end $$;

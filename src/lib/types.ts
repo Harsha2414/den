@@ -25,7 +25,10 @@ export type Author = Pick<Profile, "id" | "name" | "branch" | "year" | "verified
 
 export interface BaseItem { id: string; author_id: string; college_id: string; created_at: string; author?: Author | null }
 import type { Media } from "./media";
-export interface Post extends BaseItem { visibility: "college" | "india"; kind: string; body: string; comments?: { count: number }[]; media?: Media[] }
+export interface Post extends BaseItem {
+  visibility: "college" | "india"; kind: string; body: string; comments?: { count: number }[]; media?: Media[];
+  edited_at?: string | null; pinned_at?: string | null;
+}
 export interface Note extends BaseItem { title: string; subject: string; kind: string; semester: number; branch: string; link: string; media?: Media[] }
 export interface Placement extends BaseItem { company: string; role: string; ctc: string; result: string; rounds: string; tips: string }
 export interface Listing extends BaseItem { item: string; price: number; condition: string; contact: string; details: string; sold: boolean; media?: Media[] }

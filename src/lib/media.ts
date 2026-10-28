@@ -1,8 +1,13 @@
 "use client";
 import { supabaseBrowser } from "./supabase/client";
+import { rgbaToThumbHash, thumbHashToDataURL } from "thumbhash";
 
 /** One photo, video or file attached to something. Stored as JSON on the row. */
-export interface Media { path: string; kind: "image" | "video" | "file"; name: string; size: number; mime: string; w?: number; h?: number }
+export interface Media {
+  path: string; kind: "image" | "video" | "file"; name: string; size: number; mime: string; w?: number; h?: number;
+  /** ThumbHash of a photo (about 25 bytes, base64): a blurred preview shown while it loads. */
+  th?: string;
+}
 
 export type Accept = "images" | "media" | "docs" | "any";
 export type Bucket = "media" | "chat";
@@ -46,7 +51,7 @@ export function allowed(kind: Media["kind"], accept: Accept) {
 export const sizeLabel = (n: number) => (n >= MB ? `${(n / MB).toFixed(n >= 10 * MB ? 0 : 1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
 /** Photos are shrunk to at most 2048 px (sharp on phones, ~5x smaller). GIFs are kept as they are. */
-async function prepareImage(f: File): Promise<{ blob: Blob; mime: string; ext: string; w?: number; h?: number }> {
+async function prepareImage(f: File): Promise<{ blob: Blob; mime: string; ext: string; w?: number; h?: number; th?: string }> {
   if (f.type === "image/gif") return { blob: f, mime: "image/gif", ext: "gif" };
   const url = URL.createObjectURL(f);
   try {
@@ -56,16 +61,34 @@ async function prepareImage(f: File): Promise<{ blob: Blob; mime: string; ext: s
     const c = document.createElement("canvas"); c.width = w; c.height = h;
     const ctx = c.getContext("2d")!; ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
     const blob = await new Promise<Blob>((ok, bad) => c.toBlob((b) => (b ? ok(b) : bad(new Error("encode"))), "image/jpeg", 0.85));
-    return { blob, mime: "image/jpeg", ext: "jpg", w, h };
+    return { blob, mime: "image/jpeg", ext: "jpg", w, h, th: thumbHashOf(img) };
   } finally { URL.revokeObjectURL(url); }
+}
+
+/** A tiny blurred preview of the photo (ThumbHash needs at most 100 x 100 pixels). */
+function thumbHashOf(img: HTMLImageElement): string | undefined {
+  try {
+    const s = Math.min(1, 100 / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth * s)), h = Math.max(1, Math.round(img.naturalHeight * s));
+    const c = document.createElement("canvas"); c.width = w; c.height = h;
+    const ctx = c.getContext("2d")!; ctx.drawImage(img, 0, 0, w, h);
+    const hash = rgbaToThumbHash(w, h, ctx.getImageData(0, 0, w, h).data);
+    return btoa(String.fromCharCode(...hash));
+  } catch { return undefined; }
+}
+
+/** A data URL of the blurred preview, for showing while the real photo loads. */
+export function thumbHashUrl(th: string | undefined): string | undefined {
+  if (!th) return undefined;
+  try { return thumbHashToDataURL(Uint8Array.from(atob(th), (ch) => ch.charCodeAt(0))); } catch { return undefined; }
 }
 
 /** Upload one file. folder is "<my id>" for media, "<my id>/<conversation id>" for chat. */
 export async function upload(f: File, bucket: Bucket, folder: string): Promise<Media> {
   const kind = kindOf(f);
   if (!kind) throw new Error(`${f.name}: this type of file isn't supported.`);
-  let blob: Blob = f, mime = f.type, e = ext(f.name), w: number | undefined, h: number | undefined;
-  if (kind === "image") ({ blob, mime, ext: e, w, h } = await prepareImage(f));
+  let blob: Blob = f, mime = f.type, e = ext(f.name), w: number | undefined, h: number | undefined, th: string | undefined;
+  if (kind === "image") ({ blob, mime, ext: e, w, h, th } = await prepareImage(f));
   if (kind === "video") mime = VIDEO_MIME[e] || f.type || "video/mp4";
   if (kind === "file") mime = DOC_MIME[e] || f.type;
   const limit = LIMIT[kind];
@@ -73,7 +96,7 @@ export async function upload(f: File, bucket: Bucket, folder: string): Promise<M
   const path = `${folder}/${crypto.randomUUID()}.${e || "bin"}`;
   const { error } = await supabaseBrowser().storage.from(bucket).upload(path, blob, { contentType: mime, upsert: false, cacheControl: "31536000" });
   if (error) throw new Error(/row-level|policy|403/i.test(error.message) ? "Only verified students can upload." : `Couldn't upload ${f.name}. Try again.`);
-  return { path, kind, name: f.name.slice(0, 200), size: blob.size, mime, ...(w ? { w, h } : {}) };
+  return { path, kind, name: f.name.slice(0, 200), size: blob.size, mime, ...(w ? { w, h } : {}), ...(th ? { th } : {}) };
 }
 
 export const publicUrl = (path: string) => `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${path}`;

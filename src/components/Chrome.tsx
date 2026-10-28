@@ -9,6 +9,7 @@ import { useToast } from "./Toast";
 import Icon, { VerifiedTick, type IconName } from "./Icon";
 import Avatar from "./Avatar";
 import ThemeToggle from "./ThemeToggle";
+import { DataSaverToggle, InstallDen, ServiceWorker } from "./AppExtras";
 import { GateProvider } from "./Gate";
 import { OnlineProvider } from "./Presence";
 
@@ -124,6 +125,7 @@ export function ChromeShell({ children }: { children: ReactNode }) {
         </div>
       </div>
       <BottomNav />
+      <ServiceWorker />
       {switcher && <CollegeSwitch onClose={() => setSwitcher(false)} />}
     </ChromeCtx.Provider>
     </OnlineProvider></GateProvider>
@@ -279,7 +281,9 @@ function SideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
         <div className="side-label">Create</div>{create.map(link)}
         <div className="side-label">Yours</div>{yours.map(link)}
         <div className="side-foot">
+          <InstallDen />
           <ThemeToggle />
+          <DataSaverToggle />
           {link({ href: "/me", label: "Settings", icon: "gear", on: path === "/me" })}
           {link({ href: "/guidelines", label: "Help & policies", icon: "help" })}
         </div>

@@ -64,6 +64,15 @@ Den is for students aged **18 and over** for now (see the Roadmap for 16–17).
 - **Reactions**: tap the heart to like; long-press it (or right-click on a laptop) for ❤️ 😂 😮 😢 🔥 👏. The button shows only your own reaction and the total count; hover on a laptop to see everyone's reactions.
 - **Save posts** with the bookmark. **Saved posts** (in the menu and on Profile) lists them, and only you can see it.
 - **Comments** show the commenter's photo and name, with the comment underneath. **Reply** under any comment: replies sit indented under it and start with @Name. Long threads fold to the last two replies.
+- **Tappable links** in posts and comments, and **@mentions**: type @ to pick a classmate, and the name links to their profile.
+- **Long posts fold** to 6 lines with "…more".
+- **⋯ menu** on every post: Edit (first 15 minutes, shows "edited"), Copy link, Delete; for other people's posts, Hide this post, Mute (undo from their profile) and Report. Admins can **Pin** one post to the top of a college.
+- **Polls** (2 to 4 options). Everyone sees the totals; nobody sees who voted for what. Tap your choice again to take your vote back.
+- **Who reacted**: tap the number next to the heart.
+- **Latest / Top this week** switch on the feed.
+- **Photos**: full-screen viewer with pinch-zoom and swipe, double-tap to like with a heart burst, and blurred previews while loading. **Data saver** in the menu loads photos only when tapped; it's on by default if the phone asks to save data.
+- **Pull down to refresh** on phones. A new post appears at the top straight away.
+- **Install Den** from the menu: an app icon on the home screen, plus a "You're offline" page.
 - **Share** on every post (the phone's share sheet, or copy link). Each post has its own page (`/p/<id>`) with comments open.
 - **Feed**: posts (General, Doubt, Announcement, Lost & found, Hostel life) with up to 4 photos, likes and comments. Each post is shown to *My college* or *All India*.
 - **Notes and PYQs**: upload PDF, Word, PowerPoint or Excel files, or a link.

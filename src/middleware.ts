@@ -2,7 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { REMEMBER_COOKIE, shortSessionExpired, withRemember } from "@/lib/remember";
 
-const PUBLIC_PATHS = ["/welcome", "/opengraph-image", "/twitter-image", "/login", "/signup", "/auth", "/privacy", "/terms", "/guidelines"];
+const PUBLIC_PATHS = ["/welcome", "/opengraph-image", "/twitter-image", "/login", "/signup", "/auth", "/privacy", "/terms", "/guidelines",
+  // Installing Den as an app: these must load without signing in.
+  "/manifest.webmanifest", "/sw.js", "/offline.html", "/icons"];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });

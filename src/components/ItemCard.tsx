@@ -13,6 +13,9 @@ import { useToast } from "./Toast";
 import { shareLink } from "@/lib/share";
 import { NO_LIKES, type Likes } from "@/lib/reactions";
 import ReactButton from "./ReactButton";
+import { EditPost, PollView, PostBody, PostMenu, WhoReacted, editedLabel } from "./PostBits";
+import type { Poll } from "@/lib/postExtras";
+import { plainText } from "@/lib/mentions";
 
 export interface CardActions {
   onLike?: () => void;
@@ -23,17 +26,30 @@ export interface CardActions {
   onReact?: (reaction?: string) => void;
   /** Posts: save or unsave. */
   onSave?: () => void;
+  /** Posts: vote in the poll. */
+  onVote?: (choice: number) => void;
+  onHide?: () => void;
+  onMute?: () => void;
+  onPin?: (pin: boolean) => void;
+  /** Posts: the text was edited. */
+  onEdited?: (body: string) => void;
 }
 
-export default function ItemCard({ type, item, likes, liked, showCollege, actions, openComments = false, reactions, saved = false }: {
+export default function ItemCard({ type, item, likes, liked, showCollege, actions, openComments = false, reactions, saved = false, poll, full = false }: {
   type: SectionKey; item: AnyItem; likes: number; liked: boolean; showCollege: boolean; actions: CardActions;
   /** Posts: likes with reactions. */
   reactions?: Likes;
   saved?: boolean;
+  poll?: Poll;
+  /** The post's own page: no "…more", photos always load. */
+  full?: boolean;
   /** Start with the comments showing (the post's own page). */
   openComments?: boolean;
 }) {
-  const { me, collegeName } = useApp();
+  const { me, collegeName, canAct } = useApp();
+  const [menu, setMenu] = useState(false);
+  const [whoOpen, setWho] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [open, setOpen] = useState(openComments);
   const toast = useToast();
@@ -69,31 +85,37 @@ export default function ItemCard({ type, item, likes, liked, showCollege, action
   // Posts: a light row with no box, like a timeline.
   if (type === "posts") {
     const p = item as Post;
+    const lk = reactions || { ...NO_LIKES, n: likes, mine: liked, my: liked ? "heart" : null, counts: likes ? { heart: likes } : {} };
+    const link = () => `${window.location.origin}/p/${item.id}`;
+    const share = async () => {
+      const r = await shareLink(link(), `${a?.name || "A student"} on Den`, plainText(p.body || "").slice(0, 120));
+      if (r === "copied") toast("Link copied. Paste it in WhatsApp or anywhere.");
+      else if (r === "failed") toast("Couldn't share. Try again.");
+    };
+    const canEdit = mine && Date.now() - new Date(item.created_at).getTime() < 15 * 60e3;
     return (
-      <article className="post">
+      <article className={`post ${p.pinned_at ? "pinned" : ""}`}>
         <Link href={`/u/${item.author_id}`} aria-label={a?.name || "Student"}><Avatar id={item.author_id} name={a?.name} /></Link>
         <div className="post-main">
+          {p.pinned_at && <div className="pin-label"><Icon name="pushpin" size={13} /> Pinned</div>}
           <div className="post-meta">
             <span className="post-who">
               <Link href={`/u/${item.author_id}`}><b>{a?.name || "Student"}</b></Link>{a?.verified && <VerifiedTick />}
-              {[a?.branch, a?.year?.replace(" year", " yr"), showCollege ? collegeName(item.college_id) : "", timeAgo(item.created_at).replace(" ago", "")].filter(Boolean).map((x) => <span key={x}> · {x}</span>)}
+              {[a?.branch, a?.year?.replace(" year", " yr"), showCollege ? collegeName(item.college_id) : "", timeAgo(item.created_at).replace(" ago", ""), editedLabel(p.edited_at)].filter(Boolean).map((x) => <span key={x}> · {x}</span>)}
             </span>
-            {menuBtn}
+            <button className="ghost" onClick={() => setMenu(true)} aria-label="More options"><Icon name="more" size={18} /></button>
           </div>
           {p.kind && p.kind !== "General" && <span className={`kind-tag k-${p.kind.toLowerCase().replace(/[^a-z]+/g, "-")}`}>{p.kind}</span>}
-          {p.body && <div className="body">{p.body}</div>}
-          {!!p.media?.length && <MediaView items={p.media} className="post-media" />}
+          {p.body && <PostBody text={p.body} full={full} />}
+          {poll && actions.onVote && <PollView poll={poll} onVote={actions.onVote} canVote={canAct} />}
+          {!!p.media?.length && <MediaView items={p.media} className="post-media" alwaysLoad={full}
+            onDoubleTap={actions.onReact ? () => { if (!lk.mine) actions.onReact!("heart"); } : undefined} />}
           <div className="post-acts">
-            <ReactButton likes={reactions || { ...NO_LIKES, n: likes, mine: liked, my: liked ? "heart" : null, counts: likes ? { heart: likes } : {} }}
-              onReact={(r) => (actions.onReact ? actions.onReact(r) : actions.onLike?.())} />
+            <ReactButton likes={lk} onReact={(r) => (actions.onReact ? actions.onReact(r) : actions.onLike?.())} onShowWho={() => setWho(true)} />
             <button className="ghost" onClick={() => setOpen(!open)} aria-expanded={open} aria-label={`Comments${commentCount ? `, ${commentCount}` : ""}`}>
               <Icon name="msg" size={17} /> {commentCount || ""}
             </button>
-            <button className="ghost" aria-label="Share" onClick={async () => {
-              const r = await shareLink(`${window.location.origin}/p/${item.id}`, `${a?.name || "A student"} on Den`, p.body?.slice(0, 120) || "");
-              if (r === "copied") toast("Link copied. Paste it in WhatsApp or anywhere.");
-              else if (r === "failed") toast("Couldn't share. Try again.");
-            }}><Icon name="share" size={17} /></button>
+            <button className="ghost" aria-label="Share" onClick={share}><Icon name="share" size={17} /></button>
             {actions.onSave && (
               <button className={`ghost ${saved ? "on" : ""}`} aria-pressed={saved} aria-label={saved ? "Saved. Tap to remove" : "Save for later"} onClick={actions.onSave}>
                 <Icon name="bookmark" size={17} fill={saved} />
@@ -103,6 +125,14 @@ export default function ItemCard({ type, item, likes, liked, showCollege, action
           </div>
           {open && <Comments postId={item.id} onCount={setCommentCount} />}
         </div>
+        {menu && <PostMenu onClose={() => setMenu(false)} a={{
+          mine, canEdit, isAdmin: !!me.is_admin, pinned: !!p.pinned_at, authorName: a?.name?.split(" ")[0] || "this person",
+          onEdit: () => setEditing(true), onDelete: actions.onDelete, onReport: actions.onReport,
+          onCopy: async () => { try { await navigator.clipboard.writeText(link()); toast("Link copied"); } catch { toast("Couldn't copy the link."); } },
+          onHide: () => actions.onHide?.(), onMute: () => actions.onMute?.(), onPin: (pin) => actions.onPin?.(pin),
+        }} />}
+        {whoOpen && <WhoReacted postId={item.id} likes={lk} onClose={() => setWho(false)} />}
+        {editing && <EditPost postId={item.id} body={p.body} onClose={() => setEditing(false)} onSaved={(b) => { setEditing(false); actions.onEdited?.(b); }} />}
       </article>
     );
   }

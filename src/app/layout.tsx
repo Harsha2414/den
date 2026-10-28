@@ -6,7 +6,8 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Den",
   description: "The student network for every college in India: notes, placements, voice Spaces, live debates, events and more.",
-  icons: { icon: "/icon.svg" },
+  icons: { icon: "/icon.svg", apple: "/icons/apple-180.png" },
+  appleWebApp: { capable: true, title: "Den", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

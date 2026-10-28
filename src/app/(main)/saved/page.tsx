@@ -5,7 +5,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGate } from "@/components/Gate";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { AUTHOR_COLS, friendlyError } from "@/lib/format";
-import { groupLikes, nextLikes, NO_LIKES, type Likes } from "@/lib/reactions";
+import { nextLikes, NO_LIKES, type Likes } from "@/lib/reactions";
+import { loadExtras, nextPoll, type Poll } from "@/lib/postExtras";
 import type { Post } from "@/lib/types";
 import { useApp } from "@/components/AppContext";
 import { useToast } from "@/components/Toast";
@@ -22,6 +23,7 @@ export default function SavedPage() {
   const [likeOver, setLikeOver] = useState<Record<string, Likes>>({});
   const [unsaved, setUnsaved] = useState<Set<string>>(new Set());
   const [reporting, setReporting] = useState<string | null>(null);
+  const [pollOver, setPollOver] = useState<Record<string, Poll>>({});
 
   const q = useQuery({
     queryKey: ["saved", me.id],
@@ -33,12 +35,8 @@ export default function SavedPage() {
       // A post that was deleted, or that you can no longer see, drops out.
       const posts = ((data || []) as unknown as { post: Post | null }[]).map((r) => r.post).filter(Boolean) as Post[];
       const ids = posts.map((p) => p.id);
-      let likes: Record<string, Likes> = {};
-      if (ids.length) {
-        const { data: ls } = await supabase.from("likes").select("item_id,user_id,reaction").eq("item_type", "post").in("item_id", ids);
-        likes = groupLikes((ls || []) as { item_id: string; user_id: string; reaction?: string }[], me.id);
-      }
-      return { posts, likes };
+      const { likes, polls } = await loadExtras(supabase, ids, me.id);
+      return { posts, likes, polls };
     },
   });
   const posts = useMemo(() => (q.data?.posts || []).filter((p) => !unsaved.has(p.id)), [q.data, unsaved]);
@@ -54,6 +52,19 @@ export default function SavedPage() {
       : op === "update" ? await supabase.from("likes").update({ reaction: r }).match(match)
       : await supabase.from("likes").insert(r === "heart" ? { item_type: "post", item_id: p.id } : { item_type: "post", item_id: p.id, reaction: r });
     if (res.error) { setLikeOver((m) => ({ ...m, [p.id]: cur })); toast(friendlyError(res.error)); }
+  }
+
+  const pollOf = (id: string) => pollOver[id] || q.data?.polls[id];
+  async function vote(p: Post, choice: number) {
+    if (!gate("vote in polls")) return;
+    const cur = pollOf(p.id); if (!cur) return;
+    const { next, op } = nextPoll(cur, choice);
+    setPollOver((m) => ({ ...m, [p.id]: next }));
+    const match = { post_id: p.id, user_id: me.id };
+    const res = op === "delete" ? await supabase.from("poll_votes").delete().match(match)
+      : op === "update" ? await supabase.from("poll_votes").update({ choice }).match(match)
+      : await supabase.from("poll_votes").insert({ post_id: p.id, choice });
+    if (res.error) { setPollOver((m) => ({ ...m, [p.id]: cur })); toast(friendlyError(res.error, "Couldn't save your vote.")); }
   }
 
   async function unsave(p: Post) {
@@ -89,8 +100,8 @@ export default function SavedPage() {
           <div className="feed">
             {posts.map((p) => (
               <ItemCard key={p.id} type="posts" item={p} showCollege={p.college_id !== me.college_id}
-                likes={likeOf(p.id).n} liked={likeOf(p.id).mine} reactions={likeOf(p.id)} saved
-                actions={{ onLike: () => react(p), onReact: (r) => react(p, r), onSave: () => unsave(p), onDelete: () => remove(p), onReport: () => setReporting(p.id) }} />
+                likes={likeOf(p.id).n} liked={likeOf(p.id).mine} reactions={likeOf(p.id)} saved poll={pollOf(p.id)}
+                actions={{ onLike: () => react(p), onReact: (r) => react(p, r), onSave: () => unsave(p), onDelete: () => remove(p), onReport: () => setReporting(p.id), onVote: (c) => vote(p, c) }} />
             ))}
           </div>
         )}

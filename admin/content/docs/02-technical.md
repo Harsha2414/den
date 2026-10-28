@@ -68,6 +68,9 @@ Both websites are hosted on **Vercel**. They come from one GitHub repository, `H
 | `jsqr` | 1.4.0 | Reading QR codes with the camera at check-in |
 | `nodemailer` | 10.1.7 | Sending verification code emails |
 | `server-only` | 0.0.1 | Stops secret server code from reaching the browser |
+| `linkifyjs`, `linkify-react` | 4.3.3 | Tappable links in posts and comments |
+| `yet-another-react-lightbox` | 3.32.2 | Full-screen photos with pinch-zoom and swipe |
+| `thumbhash` | 0.1.1 | Tiny blurred previews while photos load |
 | `typescript` | 5.9.2 | Type checking |
 
 **Den Admin**: Next.js, React, the Supabase libraries, and `marked` (18.0.14) to show these documents.
@@ -128,6 +131,7 @@ Supabase runs PostgreSQL. Every change to it is a numbered SQL file that you run
 | `0010_account_exists.sql` | Sign up can tell when an email already has an account |
 | `0011_reactions_saved.sql` | Reactions on posts, and saved posts (private to each student) |
 | `0012_comment_replies.sql` | Replies to comments |
+| `0013_feed_extras.sql` | Edit a post (first 15 minutes), hide posts, mute people, polls with private votes, one pinned post per college, Top this week |
 
 **Important database functions**
 - `search_colleges`, `active_colleges`: college search and the colleges that already have students.
@@ -182,6 +186,13 @@ Only the names are listed here; the values are in Vercel. Variables marked **sec
 6. The change is recorded in Den Launch Desk.
 
 Commits are made under your GitHub name (Harsha2414) with Claude listed as co-author.
+
+## Installing Den on phones
+
+Den can be added to a phone's home screen as an app (menu → **Install Den**), with no app store needed.
+- `src/app/manifest.ts` gives the name, colours and icons (`public/icons/`).
+- `public/sw.js` is a deliberately small service worker. Pages and data always come from the network. Only files that never change (`/_next/static`, icons, fonts) are kept. A friendly **You're offline** page (`public/offline.html`) shows when there's no connection.
+- It only runs on the live site. The same setup is what phone notifications will use on Day 8.
 
 ## Speed
 

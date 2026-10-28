@@ -8,6 +8,9 @@ import { useApp } from "./AppContext";
 import { useToast } from "./Toast";
 import Icon, { VerifiedTick } from "./Icon";
 import Avatar from "./Avatar";
+import RichText from "./RichText";
+import MentionBox from "./MentionBox";
+import { toStored } from "@/lib/mentions";
 
 /** Threads with more replies than this start folded ("View 5 more replies"). */
 const SHOW_REPLIES = 2;
@@ -21,7 +24,8 @@ export default function Comments({ postId, onCount }: { postId: string; onCount:
   const [busy, setBusy] = useState(false);
   const [replying, setReplying] = useState<{ id: string; name: string } | null>(null);
   const [opened, setOpened] = useState<Set<string>>(new Set());
-  const input = useRef<HTMLInputElement>(null);
+  const input = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const [picked, setPicked] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     const base = `*, author:profiles!comments_author_id_fkey(${AUTHOR_COLS})`;
@@ -51,7 +55,7 @@ export default function Comments({ postId, onCount }: { postId: string; onCount:
   }
 
   async function send() {
-    const body = text.trim();
+    const body = toStored(text.trim(), picked);
     if (!body) return;
     setBusy(true);
     const row = replying ? { post_id: postId, body, parent_id: replying.id } : { post_id: postId, body };
@@ -59,7 +63,7 @@ export default function Comments({ postId, onCount }: { postId: string; onCount:
     setBusy(false);
     if (error) return toast(friendlyError(error, replying ? "Couldn't post your reply." : "Couldn't post your comment."));
     if (replying) { const top = list?.find((c) => c.id === replying.id); setOpened((s) => new Set(s).add(top?.parent_id || replying.id)); }
-    setText(""); setReplying(null); load();
+    setText(""); setPicked({}); setReplying(null); load();
   }
 
   async function remove(id: string) {
@@ -78,7 +82,7 @@ export default function Comments({ postId, onCount }: { postId: string; onCount:
           {c.author_id === me.id && <button className="ghost cmt-del" onClick={() => remove(c.id)} aria-label="Delete comment"><Icon name="trash" size={13} /></button>}
         </div>
         <div className="cmt-body">
-          {isReply && c.replied?.name && <Link href={`/u/${c.reply_to}`} className="cmt-at">@{c.replied.name}</Link>}{isReply && c.replied?.name ? " " : ""}{c.body}
+          {isReply && c.replied?.name && <Link href={`/u/${c.reply_to}`} className="cmt-at">@{c.replied.name}</Link>}{isReply && c.replied?.name ? " " : ""}<RichText text={c.body} />
         </div>
         {canAct && <button className="cmt-reply" onClick={() => reply(c)}>Reply</button>}
       </div>
@@ -111,8 +115,8 @@ export default function Comments({ postId, onCount }: { postId: string; onCount:
           </div>
         )}
         <div className="inline">
-          <input ref={input} value={text} maxLength={1000} placeholder={replying ? `Reply to ${replying.name.split(" ")[0]}…` : "Write a comment"} aria-label={replying ? `Reply to ${replying.name}` : "Write a comment"}
-            onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); if (e.key === "Escape") setReplying(null); }} />
+          <MentionBox ref={input} value={text} maxLength={1000} placeholder={replying ? `Reply to ${replying.name.split(" ")[0]}…` : "Write a comment"} ariaLabel={replying ? `Reply to ${replying.name}` : "Write a comment"}
+            onChange={setText} picked={picked} onPick={(n, id) => setPicked((p) => ({ ...p, [n]: id }))} onEnter={send} onEscape={() => setReplying(null)} />
           <button onClick={send} disabled={busy || !text.trim()} aria-label={replying ? "Send reply" : "Send comment"}><Icon name="send" size={16} /></button>
         </div>
       </>}

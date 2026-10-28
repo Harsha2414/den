@@ -9,7 +9,7 @@ const HOLD_MS = 450;
  * The like button on a post. Tap: heart (or take your reaction back).
  * Long-press (or right-click on a laptop): pick one of six reactions.
  */
-export default function ReactButton({ likes, onReact }: { likes: Likes; onReact: (r?: string) => void }) {
+export default function ReactButton({ likes, onReact, onShowWho }: { likes: Likes; onReact: (r?: string) => void; onShowWho?: () => void }) {
   const [open, setOpen] = useState(false);
   const timer = useRef<number | null>(null);
   const held = useRef(false);
@@ -42,8 +42,9 @@ export default function ReactButton({ likes, onReact }: { likes: Likes; onReact:
         onContextMenu={(e) => { e.preventDefault(); stop(); setOpen(true); }}
         onClick={() => { if (held.current) { held.current = false; return; } onReact(); }}>
         {likes.my && likes.my !== "heart" ? <span className="react-mine">{emojiOf(likes.my)}</span> : <Icon name="heart" size={17} fill={likes.mine} />}
-        {likes.n ? <span>{likes.n}</span> : null}
+        {likes.n && !onShowWho ? <span>{likes.n}</span> : null}
       </button>
+      {likes.n > 0 && onShowWho && <button type="button" className="ghost react-count" onClick={onShowWho} aria-label={`See who reacted (${likes.n})`}>{likes.n}</button>}
       {open && (
         <div className="react-pick" role="menu" aria-label="Pick a reaction">
           {REACTIONS.map((r) => (
